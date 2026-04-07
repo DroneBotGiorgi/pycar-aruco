@@ -110,7 +110,7 @@ python tools/simulator_client.py --host 127.0.0.1 --port 9999
 Per testare il mapping RoboMaster senza device fisico:
 
 ```powershell
-python server.py --transport robomaster-fake --camera 0 --marker-id 0 --mode dpad --robomaster-speed 0.5
+python server.py --transport robomaster-sim --camera 0 --marker-id 0 --mode dpad --robomaster-speed 0.5
 ```
 
 Puoi anche usare i profili launch Sim in [.vscode/launch.json](.vscode/launch.json).

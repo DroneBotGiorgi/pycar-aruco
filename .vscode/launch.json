@@ -36,14 +36,14 @@
       ]
     },
     {
-      "name": "Sim | Vision Server (RoboMaster Fake API)",
+      "name": "Sim | Vision Server (RoboMaster Sim API)",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/server.py",
       "console": "integratedTerminal",
       "args": [
         "--transport",
-        "robomaster-fake",
+        "robomaster-sim",
         "--camera",
         "${input:cameraIndex}",
         "--marker-id",
@@ -55,7 +55,7 @@
         "--command-heartbeat-sec",
         "0",
         "--window-title",
-        "Vision Server (RoboMaster Fake API)"
+        "Vision Server (RoboMaster Sim API)"
       ]
     },
     {

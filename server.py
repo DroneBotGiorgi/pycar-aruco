@@ -7,7 +7,7 @@ import cv2
 import cv2.aruco as aruco
 import numpy as np
 from robomaster_api import RoboMasterCommandApi
-from robomaster_fake_api import FakeRoboMasterCommandApi
+from tools.robomaster_sim_api import SimRoboMasterCommandApi
 
 from settings import (
     DEFAULT_ALLOW_REVERSE,
@@ -90,9 +90,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Server di visione: legge ArUco e invia comandi al rover via TCP o API RoboMaster.")
     parser.add_argument(
         "--transport",
-        choices=["tcp", "robomaster", "robomaster-fake"],
+        choices=["tcp", "robomaster", "robomaster-sim"],
         default=DEFAULT_TRANSPORT,
-        help="Backend uscita comandi: tcp (client esterno), robomaster (SDK diretto), robomaster-fake (simulato).",
+        help="Backend uscita comandi: tcp (client esterno), robomaster (SDK diretto), robomaster-sim (simulato).",
     )
     parser.add_argument("--host", default=DEFAULT_HOST, help="Host su cui mettersi in ascolto.")
     parser.add_argument("--port", type=int, default=DEFAULT_PORT, help="Porta TCP del server.")
@@ -191,13 +191,13 @@ def main(argv: list[str] | None = None) -> None:
             print("Continuo in sola modalita visione (nessun comando verra inviato al robot).")
             robomaster_api = None
     else:
-        robomaster_api = FakeRoboMasterCommandApi(
+        robomaster_api = SimRoboMasterCommandApi(
             robot_ip=args.robomaster_ip,
             speed=args.robomaster_speed,
             conn_type=args.robomaster_conn_type,
         )
         robomaster_api.connect()
-        print("RoboMaster fake connesso.")
+        print("RoboMaster sim connesso.")
 
     capture = cv2.VideoCapture(args.camera)
     if not capture.isOpened():
@@ -314,7 +314,7 @@ def main(argv: list[str] | None = None) -> None:
             except RuntimeError:
                 break
             except Exception as exc:
-                if args.transport in ("robomaster", "robomaster-fake"):
+                if args.transport in ("robomaster", "robomaster-sim"):
                     print(f"Errore invio comando RoboMaster: {exc}")
                     print("Continuo in sola modalita visione.")
                     if robomaster_api is not None:
@@ -332,7 +332,7 @@ def main(argv: list[str] | None = None) -> None:
         try:
             if args.transport == "tcp" and client_socket is not None:
                 client_socket.sendall("STOP\n".encode("utf-8"))
-            if args.transport in ("robomaster", "robomaster-fake") and robomaster_api is not None:
+            if args.transport in ("robomaster", "robomaster-sim") and robomaster_api is not None:
                 robomaster_api.send("STOP")
         except Exception:
             pass

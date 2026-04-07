@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 
 @dataclass
-class FakeRoboMasterCommandApi:
+class SimRoboMasterCommandApi:
     robot_ip: str
     speed: float = 0.5
     conn_type: str = "network"
@@ -17,21 +17,21 @@ class FakeRoboMasterCommandApi:
     def connect(self) -> None:
         self._connected = True
         print(
-            f"[RoboMaster-FAKE] connected ip={self.robot_ip} conn_type={self.conn_type} speed={self.speed:.3f}"
+            f"[RoboMaster-SIM] connected ip={self.robot_ip} conn_type={self.conn_type} speed={self.speed:.3f}"
         )
 
     def send(self, command: str) -> None:
         if not self._connected:
-            raise RuntimeError("Fake RoboMaster API non connessa. Chiama connect() prima di send().")
+            raise RuntimeError("Sim RoboMaster API non connessa. Chiama connect() prima di send().")
 
         vx, vy = self._command_to_velocity(command)
         self._send_count += 1
         self._last_command = command
-        print(f"[RoboMaster-FAKE] send#{self._send_count}: cmd={command} x={vx:.3f} y={vy:.3f} z=0.000")
+        print(f"[RoboMaster-SIM] send#{self._send_count}: cmd={command} x={vx:.3f} y={vy:.3f} z=0.000")
 
     def close(self) -> None:
         if self._connected:
-            print(f"[RoboMaster-FAKE] close last_cmd={self._last_command} total_sends={self._send_count}")
+            print(f"[RoboMaster-SIM] close last_cmd={self._last_command} total_sends={self._send_count}")
         self._connected = False
 
     def _command_to_velocity(self, command: str) -> tuple[float, float]:

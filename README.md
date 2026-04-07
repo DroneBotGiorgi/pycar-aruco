@@ -10,10 +10,16 @@ Per installazione, requisiti runtime, caveat RoboMaster e note di deployment, ve
 
 - `server.py`: acquisisce il video, rileva il marker ArUco e invia i comandi `W`, `A`, `S`, `D`, `STOP`.
 - `robomaster_api.py`: adapter API per inviare gli stessi comandi a RoboMaster tramite SDK.
+- `tools/robomaster_sim_api.py`: adapter simulato per validare la logica RoboMaster senza hardware.
 - `client_pycar.py`: si collega al server TCP e converte i comandi in movimenti del rover con watchdog di sicurezza e riconnessione automatica.
+- `client_arduino.c`: firmware client TCP per rover Arduino (consuma `W`, `A`, `S`, `D`, `STOP`).
+- `settings.h`: configurazione centralizzata del client Arduino (Wi-Fi, server, pin, PWM).
+- `arduino_c_compat.h`: utility C minimale per confronto stringhe lato firmware Arduino.
 - `settings.py`: file principale con tutti i parametri runtime, documentati in dettaglio.
 - `tools/simulator_client.py`: client TCP con simulazione visiva 2D per test senza rover reale.
 - `tools/generate_markers.py`: genera marker ArUco stampabili in `tools/printables`.
+- `install.md`: guida completa a installazione, caveat runtime e deployment per i vari target.
+- `CHANGELOG.md`: storico versioni e modifiche del progetto.
 
 ## Come funziona
 
@@ -41,7 +47,7 @@ Nel file `.vscode/launch.json` sono disponibili profili separati per simulazione
 
 - `Sim | Vision Server`: avvia `server.py` con parametri di tracking.
 - `Sim | Visual Rover Client`: avvia `tools/simulator_client.py` senza hardware.
-- `Sim | Vision Server (RoboMaster FAKE API)`: avvia `server.py` con backend RoboMaster simulato (senza device).
+- `Sim | Vision Server (RoboMaster Sim API)`: avvia `server.py` con backend RoboMaster simulato (senza device).
 - `Sim | Full Stack (Server + Visual Client)`: avvio combinato server + simulatore.
 
 ### Hardware reale

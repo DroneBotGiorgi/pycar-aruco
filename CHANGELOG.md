@@ -5,8 +5,8 @@ All notable changes to rover-aruco are documented here.
 ## [0.5.1] - 2026-04-07
 
 ### Added
-- **RoboMaster fake adapter**: Added `robomaster_fake_api.py` to simulate RoboMaster command dispatch without hardware.
-- **Fake launch profile**: Added `Sim | Vision Server (RoboMaster Fake API)` for no-device validation of RoboMaster mapping logic.
+- **RoboMaster sim adapter**: Added `tools/robomaster_sim_api.py` to simulate RoboMaster command dispatch without hardware.
+- **Sim launch profile**: Added `Sim | Vision Server (RoboMaster Sim API)` for no-device validation of RoboMaster mapping logic.
 
 ### Changed
 - **RoboMaster resilience**: `server.py` now degrades to vision-only mode if RoboMaster connect/send fails, instead of aborting the session.
