@@ -1,6 +1,6 @@
 # Install and Deployment Guide
 
-![version](https://img.shields.io/badge/version-0.5.1-blue)
+![version](https://img.shields.io/badge/version-0.5.2-blue)
 
 Questa guida raccoglie tutte le istruzioni di installazione e i caveat runtime.
 Il file [README.md](README.md) resta focalizzato sulle funzionalita del progetto.

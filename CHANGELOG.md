@@ -2,6 +2,12 @@
 
 All notable changes to rover-aruco are documented here.
 
+## [0.5.2] - 2026-04-07
+
+### Changed
+- **ArUco markers**: Switched detector/generator dictionary usage to `DICT_6X6_50`, simplified marker generation output, and introduced a robust detector profile for less stable lighting.
+- **Documentation and launch profiles**: Updated project docs and aligned launch-profile defaults.
+
 ## [0.5.1] - 2026-04-07
 
 ### Added

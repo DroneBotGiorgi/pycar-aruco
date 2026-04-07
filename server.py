@@ -10,10 +10,12 @@ from robomaster_api import RoboMasterCommandApi
 from tools.robomaster_sim_api import SimRoboMasterCommandApi
 
 from settings import (
+    DEFAULT_ARUCO_DETECTOR_PROFILE,
     DEFAULT_ALLOW_REVERSE,
     DEFAULT_CAMERA_INDEX,
     DEFAULT_COMMAND_HEARTBEAT_SEC,
     DEFAULT_DEADZONE_X,
+    DEFAULT_DPAD_STABILITY_FRAMES,
     DEFAULT_HOST,
     DEFAULT_LOST_STOP_FRAMES,
     DEFAULT_MARKER_ID,
@@ -48,6 +50,34 @@ def compute_dpad_command(
     if 45 <= angle < 135:
         return "S", "INDIETRO (Giu)", (0, 165, 255), (int(bottom_x), int(bottom_y)), (int(top_x), int(top_y))
     return "A", "SINISTRA", (255, 0, 255), (int(bottom_x), int(bottom_y)), (int(top_x), int(top_y))
+
+
+def dpad_visuals_for_command(command: str) -> tuple[str, tuple[int, int, int]]:
+    if command == "W":
+        return "AVANTI (Su)", (0, 255, 0)
+    if command == "D":
+        return "DESTRA", (255, 255, 0)
+    if command == "S":
+        return "INDIETRO (Giu)", (0, 165, 255)
+    if command == "A":
+        return "SINISTRA", (255, 0, 255)
+    return "STOP", (0, 0, 255)
+
+
+def build_aruco_detector(profile: str) -> aruco.ArucoDetector:
+    aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_6X6_50)
+    params = aruco.DetectorParameters()
+
+    if profile == "robust":
+        # Prioritize stable corner quality and thresholding under imperfect lighting.
+        params.cornerRefinementMethod = aruco.CORNER_REFINE_SUBPIX
+        params.adaptiveThreshWinSizeMin = 5
+        params.adaptiveThreshWinSizeMax = 23
+        params.adaptiveThreshWinSizeStep = 4
+        params.minMarkerPerimeterRate = 0.02
+        params.maxMarkerPerimeterRate = 4.0
+
+    return aruco.ArucoDetector(aruco_dict, params)
 
 
 def compute_chase_command(
@@ -141,6 +171,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="Invia periodicamente il comando corrente anche se invariato.",
     )
     parser.add_argument(
+        "--aruco-detector-profile",
+        choices=["balanced", "robust"],
+        default=DEFAULT_ARUCO_DETECTOR_PROFILE,
+        help="Preset detector ArUco: robust (default) o balanced.",
+    )
+    parser.add_argument(
+        "--dpad-stability-frames",
+        type=int,
+        default=DEFAULT_DPAD_STABILITY_FRAMES,
+        help="Numero frame consecutivi richiesti prima di confermare un cambio comando in modalita dpad.",
+    )
+    parser.add_argument(
         "--robomaster-ip",
         default=DEFAULT_ROBOMASTER_IP,
         help="IP del robot RoboMaster usato quando --transport=robomaster.",
@@ -209,8 +251,7 @@ def main(argv: list[str] | None = None) -> None:
             robomaster_api.close()
         raise RuntimeError(f"Impossibile aprire la webcam con indice {args.camera}.")
 
-    aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_6X6_250)
-    detector = aruco.ArucoDetector(aruco_dict, aruco.DetectorParameters())
+    detector = build_aruco_detector(args.aruco_detector_profile)
 
     print(f"Modalita {args.mode} attiva. Premi Q per uscire.")
 
@@ -219,6 +260,9 @@ def main(argv: list[str] | None = None) -> None:
     last_send_ts = time.monotonic()
     last_fps_ts = time.perf_counter()
     fps = 0.0
+    dpad_confirmed_command = "STOP"
+    dpad_pending_command = "STOP"
+    dpad_pending_count = 0
 
     try:
         while True:
@@ -240,7 +284,27 @@ def main(argv: list[str] | None = None) -> None:
                 if matches.size > 0:
                     marker_corners = corners[matches[0]][0]
                     if args.mode == "dpad":
-                        command, status_text, color, start_point, end_point = compute_dpad_command(marker_corners)
+                        raw_command, _, _, start_point, end_point = compute_dpad_command(marker_corners)
+
+                        if args.dpad_stability_frames <= 1:
+                            dpad_confirmed_command = raw_command
+                        else:
+                            if raw_command == dpad_confirmed_command:
+                                dpad_pending_command = raw_command
+                                dpad_pending_count = 0
+                            else:
+                                if raw_command == dpad_pending_command:
+                                    dpad_pending_count += 1
+                                else:
+                                    dpad_pending_command = raw_command
+                                    dpad_pending_count = 1
+
+                                if dpad_pending_count >= args.dpad_stability_frames:
+                                    dpad_confirmed_command = raw_command
+                                    dpad_pending_count = 0
+
+                        command = dpad_confirmed_command
+                        status_text, color = dpad_visuals_for_command(command)
                     else:
                         (
                             command,
@@ -271,6 +335,9 @@ def main(argv: list[str] | None = None) -> None:
                 command = "STOP"
                 status_text = "MARKER PERSO -> STOP"
                 color = (0, 0, 255)
+                dpad_confirmed_command = "STOP"
+                dpad_pending_command = "STOP"
+                dpad_pending_count = 0
 
             cv2.putText(frame, f"AZIONE: {status_text}", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.2, color, 3)
             cv2.putText(frame, f"CMD: {command}", (20, 95), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)

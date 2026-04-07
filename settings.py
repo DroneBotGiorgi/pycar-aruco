@@ -42,6 +42,16 @@ DEFAULT_ALLOW_REVERSE = False
 # Set to 0 (or negative) to disable periodic resend and send only on change/STOP.
 DEFAULT_COMMAND_HEARTBEAT_SEC = 0.20
 
+# ArUco recognition quality tuning
+# balanced: default OpenCV detector parameters.
+# robust: stronger corner refinement and threshold window settings for harder lighting.
+DEFAULT_ARUCO_DETECTOR_PROFILE = "robust"
+
+# D-pad command stabilization
+# Number of consecutive frames required to confirm a direction change in dpad mode.
+# Set to 1 to disable hysteresis and react immediately.
+DEFAULT_DPAD_STABILITY_FRAMES = 2
+
 # Server output transport
 # tcp: sends W/A/S/D/STOP text commands over TCP to a rover client.
 # robomaster: sends mapped velocity commands through RoboMaster SDK.

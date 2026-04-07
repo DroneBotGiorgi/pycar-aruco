@@ -1,6 +1,6 @@
 # rover-aruco
 
-![version](https://img.shields.io/badge/version-0.5.1-blue)
+![version](https://img.shields.io/badge/version-0.5.2-blue)
 
 Questo progetto usa una webcam per leggere un marker ArUco e trasformarlo in comandi di guida. Il server supporta due backend: TCP (`W`, `A`, `S`, `D`, `STOP`) per client esterni e API RoboMaster via SDK.
 
@@ -9,15 +9,17 @@ Per installazione, requisiti runtime, caveat RoboMaster e note di deployment, ve
 ## Componenti
 
 - `server.py`: acquisisce il video, rileva il marker ArUco e invia i comandi `W`, `A`, `S`, `D`, `STOP`.
+- `settings.py`: file principale con tutti i parametri runtime per il server, documentati in dettaglio.
 - `robomaster_api.py`: adapter API per inviare gli stessi comandi a RoboMaster tramite SDK.
-- `tools/robomaster_sim_api.py`: adapter simulato per validare la logica RoboMaster senza hardware.
 - `client_pycar.py`: si collega al server TCP e converte i comandi in movimenti del rover con watchdog di sicurezza e riconnessione automatica.
 - `client_arduino.c`: firmware client TCP per rover Arduino (consuma `W`, `A`, `S`, `D`, `STOP`).
 - `settings.h`: configurazione centralizzata del client Arduino (Wi-Fi, server, pin, PWM).
 - `arduino_c_compat.h`: utility C minimale per confronto stringhe lato firmware Arduino.
-- `settings.py`: file principale con tutti i parametri runtime, documentati in dettaglio.
+
 - `tools/simulator_client.py`: client TCP con simulazione visiva 2D per test senza rover reale.
+- `tools/robomaster_sim_api.py`: adapter simulato per validare la logica RoboMaster senza hardware.
 - `tools/generate_markers.py`: genera marker ArUco stampabili in `tools/printables`.
+
 - `install.md`: guida completa a installazione, caveat runtime e deployment per i vari target.
 - `CHANGELOG.md`: storico versioni e modifiche del progetto.
 
