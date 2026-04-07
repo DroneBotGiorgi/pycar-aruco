@@ -1,6 +1,6 @@
 # rover-aruco
 
-![version](https://img.shields.io/badge/version-0.5.0-blue)
+![version](https://img.shields.io/badge/version-0.5.1-blue)
 
 Questo progetto usa una webcam per leggere un marker ArUco e trasformarlo in comandi di guida. Il server supporta due backend: TCP (`W`, `A`, `S`, `D`, `STOP`) per client esterni e API RoboMaster via SDK.
 
@@ -41,11 +41,12 @@ Nel file `.vscode/launch.json` sono disponibili profili separati per simulazione
 
 - `Sim | Vision Server`: avvia `server.py` con parametri di tracking.
 - `Sim | Visual Rover Client`: avvia `tools/simulator_client.py` senza hardware.
+- `Sim | Vision Server (RoboMaster FAKE API)`: avvia `server.py` con backend RoboMaster simulato (senza device).
 - `Sim | Full Stack (Server + Visual Client)`: avvio combinato server + simulatore.
 
 ### Hardware reale
 
-- `HW | Vision Server`: avvia `server.py` per acquisizione camera reale.
+- `HW | Vision Server (Pycar TCP)`: avvia `server.py` per acquisizione camera reale.
 - `HW | Vision Server (Arduino TCP)`: avvia `server.py` per l'integrazione con rover Arduino via TCP.
 - `HW | Vision Server (RoboMaster API)`: avvia `server.py` con backend RoboMaster SDK.
 

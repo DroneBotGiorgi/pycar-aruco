@@ -1,6 +1,6 @@
 # Install and Deployment Guide
 
-![version](https://img.shields.io/badge/version-0.5.0-blue)
+![version](https://img.shields.io/badge/version-0.5.1-blue)
 
 Questa guida raccoglie tutte le istruzioni di installazione e i caveat runtime.
 Il file [README.md](README.md) resta focalizzato sulle funzionalita del progetto.
@@ -105,6 +105,12 @@ Per test funzionale del protocollo comandi senza rover reale:
 
 ```powershell
 python tools/simulator_client.py --host 127.0.0.1 --port 9999
+```
+
+Per testare il mapping RoboMaster senza device fisico:
+
+```powershell
+python server.py --transport robomaster-fake --camera 0 --marker-id 0 --mode dpad --robomaster-speed 0.5
 ```
 
 Puoi anche usare i profili launch Sim in [.vscode/launch.json](.vscode/launch.json).

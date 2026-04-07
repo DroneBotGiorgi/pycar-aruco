@@ -7,6 +7,7 @@ import cv2
 import cv2.aruco as aruco
 import numpy as np
 from robomaster_api import RoboMasterCommandApi
+from robomaster_fake_api import FakeRoboMasterCommandApi
 
 from settings import (
     DEFAULT_ALLOW_REVERSE,
@@ -89,9 +90,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Server di visione: legge ArUco e invia comandi al rover via TCP o API RoboMaster.")
     parser.add_argument(
         "--transport",
-        choices=["tcp", "robomaster"],
+        choices=["tcp", "robomaster", "robomaster-fake"],
         default=DEFAULT_TRANSPORT,
-        help="Backend uscita comandi: tcp (client esterno) oppure robomaster (SDK diretto).",
+        help="Backend uscita comandi: tcp (client esterno), robomaster (SDK diretto), robomaster-fake (simulato).",
     )
     parser.add_argument("--host", default=DEFAULT_HOST, help="Host su cui mettersi in ascolto.")
     parser.add_argument("--port", type=int, default=DEFAULT_PORT, help="Porta TCP del server.")
@@ -175,20 +176,37 @@ def main(argv: list[str] | None = None) -> None:
         print(f"In attesa di connessione dal rover su {args.host}:{args.port}...")
         client_socket, address = server_socket.accept()
         print(f"Rover connesso da {address}.")
-    else:
+    elif args.transport == "robomaster":
         robomaster_api = RoboMasterCommandApi(
             robot_ip=args.robomaster_ip,
             speed=args.robomaster_speed,
             conn_type=args.robomaster_conn_type,
         )
         print(f"Connessione RoboMaster verso {args.robomaster_ip}...")
+        try:
+            robomaster_api.connect()
+            print("RoboMaster connesso.")
+        except Exception as exc:
+            print(f"RoboMaster non connesso: {exc}")
+            print("Continuo in sola modalita visione (nessun comando verra inviato al robot).")
+            robomaster_api = None
+    else:
+        robomaster_api = FakeRoboMasterCommandApi(
+            robot_ip=args.robomaster_ip,
+            speed=args.robomaster_speed,
+            conn_type=args.robomaster_conn_type,
+        )
         robomaster_api.connect()
-        print("RoboMaster connesso.")
+        print("RoboMaster fake connesso.")
 
     capture = cv2.VideoCapture(args.camera)
     if not capture.isOpened():
-        client_socket.close()
-        server_socket.close()
+        if client_socket is not None:
+            client_socket.close()
+        if server_socket is not None:
+            server_socket.close()
+        if robomaster_api is not None:
+            robomaster_api.close()
         raise RuntimeError(f"Impossibile aprire la webcam con indice {args.camera}.")
 
     aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_6X6_250)
@@ -279,19 +297,31 @@ def main(argv: list[str] | None = None) -> None:
                 should_send = (
                     command != last_command
                     or command == "STOP"
-                    or (now_send - last_send_ts) >= args.command_heartbeat_sec
+                    or (args.command_heartbeat_sec > 0 and (now_send - last_send_ts) >= args.command_heartbeat_sec)
                 )
                 if should_send:
                     if args.transport == "tcp":
+                        if client_socket is None:
+                            raise RuntimeError("Socket client TCP non disponibile.")
                         client_socket.sendall(f"{command}\n".encode("utf-8"))
                     else:
-                        robomaster_api.send(command)
+                        if robomaster_api is not None:
+                            robomaster_api.send(command)
                     last_command = command
                     last_send_ts = now_send
             except OSError:
                 break
             except RuntimeError:
                 break
+            except Exception as exc:
+                if args.transport in ("robomaster", "robomaster-fake"):
+                    print(f"Errore invio comando RoboMaster: {exc}")
+                    print("Continuo in sola modalita visione.")
+                    if robomaster_api is not None:
+                        robomaster_api.close()
+                        robomaster_api = None
+                else:
+                    break
 
             cv2.imshow(args.window_title, frame)
             if cv2.waitKey(1) & 0xFF == ord("q"):
@@ -302,9 +332,9 @@ def main(argv: list[str] | None = None) -> None:
         try:
             if args.transport == "tcp" and client_socket is not None:
                 client_socket.sendall("STOP\n".encode("utf-8"))
-            if args.transport == "robomaster" and robomaster_api is not None:
+            if args.transport in ("robomaster", "robomaster-fake") and robomaster_api is not None:
                 robomaster_api.send("STOP")
-        except (OSError, RuntimeError):
+        except Exception:
             pass
         capture.release()
         cv2.destroyAllWindows()

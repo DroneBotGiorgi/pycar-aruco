@@ -36,7 +36,30 @@
       ]
     },
     {
-      "name": "HW | Vision Server",
+      "name": "Sim | Vision Server (RoboMaster Fake API)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/server.py",
+      "console": "integratedTerminal",
+      "args": [
+        "--transport",
+        "robomaster-fake",
+        "--camera",
+        "${input:cameraIndex}",
+        "--marker-id",
+        "${input:markerId}",
+        "--mode",
+        "${input:robomasterMode}",
+        "--robomaster-speed",
+        "${input:robomasterSpeed}",
+        "--command-heartbeat-sec",
+        "0",
+        "--window-title",
+        "Vision Server (RoboMaster Fake API)"
+      ]
+    },
+    {
+      "name": "HW | Vision Server (Pycar TCP)",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/server.py",
@@ -53,7 +76,7 @@
         "--mode",
         "${input:hwMode}",
         "--window-title",
-        "Vision Server (HW)"
+        "Vision Server (Pycar TCP)"
       ]
     },
     {

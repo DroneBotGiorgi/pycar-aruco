@@ -39,6 +39,7 @@ DEFAULT_ALLOW_REVERSE = False
 # Command stream reliability
 # Heartbeat interval: server resends current command at this period even if unchanged.
 # This keeps clients alive under watchdog logic and fixes dpad hold behavior.
+# Set to 0 (or negative) to disable periodic resend and send only on change/STOP.
 DEFAULT_COMMAND_HEARTBEAT_SEC = 0.20
 
 # Server output transport
