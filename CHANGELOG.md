@@ -1,6 +1,16 @@
 # Changelog
 
-All notable changes to pycar-aruco are documented here.
+All notable changes to rover-aruco are documented here.
+
+## [0.5.0] - 2026-04-07
+
+### Added
+- **Arduino TCP client integration**: Added dedicated firmware client `client_arduino.c` with centralized configuration in `settings.h`.
+- **RoboMaster API integration**: Added `robomaster_api.py` and `server.py --transport robomaster` backend for direct SDK command dispatch.
+- **RoboMaster dedicated runtime profile**: Added Python 3.8 isolated environment flow and launch profile for RoboMaster API execution.
+
+### Changed
+- **Documentation split**: Installation/deployment moved to `install.md`, while `README.md` now focuses on product features and usage behavior.
 
 ## [0.4.0] - 2026-04-07
 

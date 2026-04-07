@@ -1,0 +1,25 @@
+#ifndef CLIENT_ARDUINO_SETTINGS_H
+#define CLIENT_ARDUINO_SETTINGS_H
+
+// Wi-Fi and TCP server settings.
+#define ARDUINO_WIFI_SSID "IL_TUO_WIFI"
+#define ARDUINO_WIFI_PASSWORD "LA_TUA_PASSWORD"
+#define ARDUINO_SERVER_IP "192.168.1.105"
+#define ARDUINO_SERVER_PORT 9999
+
+// Runtime behavior.
+#define ARDUINO_SERIAL_BAUD 9600
+#define ARDUINO_WIFI_RETRY_DELAY_MS 500
+#define ARDUINO_SERVER_RETRY_DELAY_MS 2000
+#define ARDUINO_COMMAND_BUFFER_SIZE 16
+
+// Motor pins (Keyestudio 4WD).
+#define ARDUINO_MR_CTRL_PIN 2
+#define ARDUINO_MR_PWM_PIN 6
+#define ARDUINO_ML_CTRL_PIN 4
+#define ARDUINO_ML_PWM_PIN 5
+
+// Default PWM speed for movement.
+#define ARDUINO_DRIVE_PWM 200
+
+#endif

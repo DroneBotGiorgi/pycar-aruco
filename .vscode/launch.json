@@ -57,16 +57,48 @@
       ]
     },
     {
-      "name": "HW | Rover Client (Picar-X)",
+      "name": "HW | Vision Server (Arduino TCP)",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/client.py",
+      "program": "${workspaceFolder}/server.py",
       "console": "integratedTerminal",
       "args": [
         "--host",
-        "${input:clientHost}",
+        "${input:serverHost}",
         "--port",
-        "${input:serverPort}"
+        "${input:serverPort}",
+        "--camera",
+        "${input:cameraIndex}",
+        "--marker-id",
+        "${input:markerId}",
+        "--mode",
+        "${input:arduinoMode}",
+        "--window-title",
+        "Vision Server (Arduino TCP)"
+      ]
+    },
+    {
+      "name": "HW | Vision Server (RoboMaster API)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/server.py",
+      "python": "${workspaceFolder}/.venv-robomaster38/Scripts/python.exe",
+      "console": "integratedTerminal",
+      "args": [
+        "--transport",
+        "robomaster",
+        "--camera",
+        "${input:cameraIndex}",
+        "--marker-id",
+        "${input:markerId}",
+        "--mode",
+        "${input:robomasterMode}",
+        "--robomaster-ip",
+        "${input:robomasterIp}",
+        "--robomaster-speed",
+        "${input:robomasterSpeed}",
+        "--window-title",
+        "Vision Server (RoboMaster API)"
       ]
     }
   ],
@@ -129,6 +161,38 @@
         "dpad"
       ],
       "default": "dpad"
+    },
+    {
+      "id": "arduinoMode",
+      "type": "pickString",
+      "description": "Modalita server per rover Arduino TCP",
+      "options": [
+        "dpad",
+        "chase"
+      ],
+      "default": "dpad"
+    },
+    {
+      "id": "robomasterMode",
+      "type": "pickString",
+      "description": "Modalita server per RoboMaster API",
+      "options": [
+        "dpad",
+        "chase"
+      ],
+      "default": "dpad"
+    },
+    {
+      "id": "robomasterIp",
+      "type": "promptString",
+      "description": "IP del RoboMaster",
+      "default": "192.168.1.101"
+    },
+    {
+      "id": "robomasterSpeed",
+      "type": "promptString",
+      "description": "Velocita RoboMaster (es. 0.5)",
+      "default": "0.5"
     }
   ]
 }

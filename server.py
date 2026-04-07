@@ -6,6 +6,7 @@ import time
 import cv2
 import cv2.aruco as aruco
 import numpy as np
+from robomaster_api import RoboMasterCommandApi
 
 from settings import (
     DEFAULT_ALLOW_REVERSE,
@@ -17,8 +18,12 @@ from settings import (
     DEFAULT_MARKER_ID,
     DEFAULT_MODE,
     DEFAULT_PORT,
+    DEFAULT_ROBOMASTER_CONN_TYPE,
+    DEFAULT_ROBOMASTER_IP,
+    DEFAULT_ROBOMASTER_SPEED,
     DEFAULT_SIZE_TOLERANCE,
     DEFAULT_TARGET_SIZE,
+    DEFAULT_TRANSPORT,
     DEFAULT_WINDOW_TITLE,
 )
 
@@ -81,7 +86,13 @@ def compute_chase_command(
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Server di visione: legge ArUco e invia comandi al rover via TCP.")
+    parser = argparse.ArgumentParser(description="Server di visione: legge ArUco e invia comandi al rover via TCP o API RoboMaster.")
+    parser.add_argument(
+        "--transport",
+        choices=["tcp", "robomaster"],
+        default=DEFAULT_TRANSPORT,
+        help="Backend uscita comandi: tcp (client esterno) oppure robomaster (SDK diretto).",
+    )
     parser.add_argument("--host", default=DEFAULT_HOST, help="Host su cui mettersi in ascolto.")
     parser.add_argument("--port", type=int, default=DEFAULT_PORT, help="Porta TCP del server.")
     parser.add_argument("--camera", type=int, default=DEFAULT_CAMERA_INDEX, help="Indice della webcam da usare.")
@@ -128,6 +139,22 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_COMMAND_HEARTBEAT_SEC,
         help="Invia periodicamente il comando corrente anche se invariato.",
     )
+    parser.add_argument(
+        "--robomaster-ip",
+        default=DEFAULT_ROBOMASTER_IP,
+        help="IP del robot RoboMaster usato quando --transport=robomaster.",
+    )
+    parser.add_argument(
+        "--robomaster-speed",
+        type=float,
+        default=DEFAULT_ROBOMASTER_SPEED,
+        help="Velocita lineare usata per W/A/S/D quando --transport=robomaster.",
+    )
+    parser.add_argument(
+        "--robomaster-conn-type",
+        default=DEFAULT_ROBOMASTER_CONN_TYPE,
+        help="Conn type per SDK RoboMaster (tipico: network).",
+    )
     parser.add_argument("--window-title", default=DEFAULT_WINDOW_TITLE, help="Titolo della finestra OpenCV.")
     return parser
 
@@ -135,14 +162,28 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> None:
     args = build_parser().parse_args(argv)
 
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server_socket.bind((args.host, args.port))
-    server_socket.listen(1)
+    server_socket = None
+    client_socket = None
+    robomaster_api = None
 
-    print(f"In attesa di connessione dal rover su {args.host}:{args.port}...")
-    client_socket, address = server_socket.accept()
-    print(f"Rover connesso da {address}.")
+    if args.transport == "tcp":
+        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        server_socket.bind((args.host, args.port))
+        server_socket.listen(1)
+
+        print(f"In attesa di connessione dal rover su {args.host}:{args.port}...")
+        client_socket, address = server_socket.accept()
+        print(f"Rover connesso da {address}.")
+    else:
+        robomaster_api = RoboMasterCommandApi(
+            robot_ip=args.robomaster_ip,
+            speed=args.robomaster_speed,
+            conn_type=args.robomaster_conn_type,
+        )
+        print(f"Connessione RoboMaster verso {args.robomaster_ip}...")
+        robomaster_api.connect()
+        print("RoboMaster connesso.")
 
     capture = cv2.VideoCapture(args.camera)
     if not capture.isOpened():
@@ -241,10 +282,15 @@ def main(argv: list[str] | None = None) -> None:
                     or (now_send - last_send_ts) >= args.command_heartbeat_sec
                 )
                 if should_send:
-                    client_socket.sendall(f"{command}\n".encode("utf-8"))
+                    if args.transport == "tcp":
+                        client_socket.sendall(f"{command}\n".encode("utf-8"))
+                    else:
+                        robomaster_api.send(command)
                     last_command = command
                     last_send_ts = now_send
             except OSError:
+                break
+            except RuntimeError:
                 break
 
             cv2.imshow(args.window_title, frame)
@@ -254,13 +300,20 @@ def main(argv: list[str] | None = None) -> None:
         pass
     finally:
         try:
-            client_socket.sendall("STOP\n".encode("utf-8"))
-        except OSError:
+            if args.transport == "tcp" and client_socket is not None:
+                client_socket.sendall("STOP\n".encode("utf-8"))
+            if args.transport == "robomaster" and robomaster_api is not None:
+                robomaster_api.send("STOP")
+        except (OSError, RuntimeError):
             pass
         capture.release()
         cv2.destroyAllWindows()
-        client_socket.close()
-        server_socket.close()
+        if client_socket is not None:
+            client_socket.close()
+        if server_socket is not None:
+            server_socket.close()
+        if robomaster_api is not None:
+            robomaster_api.close()
 
 
 if __name__ == "__main__":

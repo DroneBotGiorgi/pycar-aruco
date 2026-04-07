@@ -1,13 +1,16 @@
-# pycar-aruco
+# rover-aruco
 
-![version](https://img.shields.io/badge/version-0.4.0-blue)
+![version](https://img.shields.io/badge/version-0.5.0-blue)
 
-Questo progetto usa una webcam per leggere un marker ArUco e trasformarlo in comandi di guida inviati via TCP a un rover basato su Picar-X. Il protocollo resta volutamente semplice e stabile: `W`, `A`, `S`, `D`, `STOP`.
+Questo progetto usa una webcam per leggere un marker ArUco e trasformarlo in comandi di guida. Il server supporta due backend: TCP (`W`, `A`, `S`, `D`, `STOP`) per client esterni e API RoboMaster via SDK.
+
+Per installazione, requisiti runtime, caveat RoboMaster e note di deployment, vedi [install.md](install.md).
 
 ## Componenti
 
 - `server.py`: acquisisce il video, rileva il marker ArUco e invia i comandi `W`, `A`, `S`, `D`, `STOP`.
-- `client.py`: si collega al server TCP e converte i comandi in movimenti del rover con watchdog di sicurezza e riconnessione automatica.
+- `robomaster_api.py`: adapter API per inviare gli stessi comandi a RoboMaster tramite SDK.
+- `client_pycar.py`: si collega al server TCP e converte i comandi in movimenti del rover con watchdog di sicurezza e riconnessione automatica.
 - `settings.py`: file principale con tutti i parametri runtime, documentati in dettaglio.
 - `tools/simulator_client.py`: client TCP con simulazione visiva 2D per test senza rover reale.
 - `tools/generate_markers.py`: genera marker ArUco stampabili in `tools/printables`.
@@ -30,55 +33,6 @@ In `dpad`, la mappatura e:
 
 Se il marker non viene rilevato, il server invia `STOP`.
 
-## Requisiti
-
-### Server
-
-- Python 3.10+
-- OpenCV con modulo ArUco
-- NumPy
-- webcam collegata
-
-Installazione tipica:
-
-```bash
-pip install opencv-contrib-python numpy
-```
-
-### Client
-
-- Python 3.10+
-- libreria `picarx`
-- rover Picar-X configurato correttamente
-
-## Avvio
-
-### 1. Avviare il server sul PC con webcam
-
-```bash
-python server.py --host 0.0.0.0 --port 9999 --camera 0 --marker-id 0 --mode dpad
-```
-
-### 2. Avviare il client sul rover
-
-Sostituisci `192.168.1.105` con l'IP del PC che esegue il server.
-
-```bash
-python client.py --host 192.168.1.105 --port 9999
-```
-
-Validazione senza hardware:
-
-```bash
-python client.py --host 192.168.1.105 --dry-run
-```
-
-Simulazione visiva senza hardware:
-
-```bash
-python tools/simulator_client.py --host 192.168.1.105 --port 9999
-```
-
 ## Profili Launch VS Code
 
 Nel file `.vscode/launch.json` sono disponibili profili separati per simulazione e hardware reale.
@@ -92,13 +46,14 @@ Nel file `.vscode/launch.json` sono disponibili profili separati per simulazione
 ### Hardware reale
 
 - `HW | Vision Server`: avvia `server.py` per acquisizione camera reale.
-- `HW | Rover Client (Picar-X)`: avvia `client.py` per pilotare il rover.
+- `HW | Vision Server (Arduino TCP)`: avvia `server.py` per l'integrazione con rover Arduino via TCP.
+- `HW | Vision Server (RoboMaster API)`: avvia `server.py` con backend RoboMaster SDK.
 
 Ogni profilo usa input runtime modificabili al momento del lancio:
 
 - rete: host/port, camera, marker-id, mode
 
-Per tutti i parametri di tuning e sicurezza (server/client/simulatore), fai riferimento a `settings.py`.
+Per tutti i parametri di tuning e sicurezza (server/client/simulatore), fai riferimento a [settings.py](settings.py).
 
 ## Uso pratico
 

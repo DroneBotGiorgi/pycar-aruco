@@ -1,4 +1,4 @@
-"""Centralized runtime settings for pycar-aruco.
+"""Centralized runtime settings for rover-aruco.
 
 Edit this file to tune behavior for both simulation and real hardware runs.
 CLI flags still exist, but launch profiles now intentionally pass only a small subset
@@ -40,6 +40,20 @@ DEFAULT_ALLOW_REVERSE = False
 # Heartbeat interval: server resends current command at this period even if unchanged.
 # This keeps clients alive under watchdog logic and fixes dpad hold behavior.
 DEFAULT_COMMAND_HEARTBEAT_SEC = 0.20
+
+# Server output transport
+# tcp: sends W/A/S/D/STOP text commands over TCP to a rover client.
+# robomaster: sends mapped velocity commands through RoboMaster SDK.
+DEFAULT_TRANSPORT = "tcp"
+# IP used by RoboMaster SDK when DEFAULT_TRANSPORT is "robomaster".
+# Typical setup: robot and PC on the same router subnet.
+DEFAULT_ROBOMASTER_IP = "192.168.1.101"
+# Linear speed sent to RoboMaster chassis for W/A/S/D mapping.
+# Keep this conservative first, then tune gradually after field tests.
+DEFAULT_ROBOMASTER_SPEED = 0.5
+# RoboMaster SDK connection type. For standard LAN use "network".
+# Change only if you are explicitly using a different DJI-supported mode.
+DEFAULT_ROBOMASTER_CONN_TYPE = "network"
 
 # Rover actuation defaults (client)
 # Base speed for movement commands.
