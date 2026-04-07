@@ -1,0 +1,134 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Sim | Vision Server",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/server.py",
+      "console": "integratedTerminal",
+      "args": [
+        "--host",
+        "${input:serverHost}",
+        "--port",
+        "${input:serverPort}",
+        "--camera",
+        "${input:cameraIndex}",
+        "--marker-id",
+        "${input:markerId}",
+        "--mode",
+        "${input:simMode}",
+        "--window-title",
+        "Vision Server (Sim)"
+      ]
+    },
+    {
+      "name": "Sim | Visual Rover Client",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/tools/simulator_client.py",
+      "console": "integratedTerminal",
+      "args": [
+        "--host",
+        "${input:clientHost}",
+        "--port",
+        "${input:serverPort}"
+      ]
+    },
+    {
+      "name": "HW | Vision Server",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/server.py",
+      "console": "integratedTerminal",
+      "args": [
+        "--host",
+        "${input:serverHost}",
+        "--port",
+        "${input:serverPort}",
+        "--camera",
+        "${input:cameraIndex}",
+        "--marker-id",
+        "${input:markerId}",
+        "--mode",
+        "${input:hwMode}",
+        "--window-title",
+        "Vision Server (HW)"
+      ]
+    },
+    {
+      "name": "HW | Rover Client (Picar-X)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/client.py",
+      "console": "integratedTerminal",
+      "args": [
+        "--host",
+        "${input:clientHost}",
+        "--port",
+        "${input:serverPort}"
+      ]
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Sim | Full Stack (Server + Visual Client)",
+      "configurations": [
+        "Sim | Vision Server",
+        "Sim | Visual Rover Client"
+      ]
+    }
+  ],
+  "inputs": [
+    {
+      "id": "serverHost",
+      "type": "promptString",
+      "description": "Server bind host",
+      "default": "0.0.0.0"
+    },
+    {
+      "id": "clientHost",
+      "type": "promptString",
+      "description": "Host/IP del server visto dal client",
+      "default": "127.0.0.1"
+    },
+    {
+      "id": "serverPort",
+      "type": "promptString",
+      "description": "Porta TCP server",
+      "default": "9999"
+    },
+    {
+      "id": "cameraIndex",
+      "type": "promptString",
+      "description": "Indice webcam",
+      "default": "0"
+    },
+    {
+      "id": "markerId",
+      "type": "promptString",
+      "description": "ID marker ArUco",
+      "default": "0"
+    },
+    {
+      "id": "simMode",
+      "type": "pickString",
+      "description": "Modalita server per simulazione",
+      "options": [
+        "chase",
+        "dpad"
+      ],
+      "default": "dpad"
+    },
+    {
+      "id": "hwMode",
+      "type": "pickString",
+      "description": "Modalita server per hardware reale",
+      "options": [
+        "chase",
+        "dpad"
+      ],
+      "default": "dpad"
+    }
+  ]
+}

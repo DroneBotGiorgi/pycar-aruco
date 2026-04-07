@@ -3,7 +3,15 @@ import importlib
 import socket
 import time
 
-from config import DEFAULT_PORT, DEFAULT_SPEED, DEFAULT_STEERING_ANGLE, DEFAULT_STEERING_INVERSION
+from settings import (
+    DEFAULT_COMMAND_TIMEOUT,
+    DEFAULT_PORT,
+    DEFAULT_RETRY_DELAY,
+    DEFAULT_SOCKET_TIMEOUT,
+    DEFAULT_SPEED,
+    DEFAULT_STEERING_ANGLE,
+    DEFAULT_STEERING_INVERSION,
+)
 
 
 VALID_COMMANDS = {"W", "S", "A", "D", "STOP"}
@@ -25,8 +33,25 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--retry-delay",
         type=float,
-        default=2.0,
+        default=DEFAULT_RETRY_DELAY,
         help="Secondi di attesa tra i tentativi di connessione.",
+    )
+    parser.add_argument(
+        "--command-timeout",
+        type=float,
+        default=DEFAULT_COMMAND_TIMEOUT,
+        help="Se non arrivano comandi entro questo tempo, invia STOP di sicurezza.",
+    )
+    parser.add_argument(
+        "--socket-timeout",
+        type=float,
+        default=DEFAULT_SOCKET_TIMEOUT,
+        help="Timeout lettura socket per attivare il watchdog senza blocchi lunghi.",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Simula il rover senza toccare l'hardware Picar-X.",
     )
     return parser
 
@@ -63,49 +88,93 @@ def apply_command(px, command: str, speed: int, steering_angle: int, steering_in
     px.set_dir_servo_angle(0)
 
 
+def safe_stop(px) -> None:
+    try:
+        px.forward(0)
+    finally:
+        px.set_dir_servo_angle(0)
+
+
+class DryRunPicarx:
+    def set_dir_servo_angle(self, angle: int) -> None:
+        print(f"[DRY-RUN] steering={angle}")
+
+    def forward(self, speed: int) -> None:
+        print(f"[DRY-RUN] forward={speed}")
+
+    def backward(self, speed: int) -> None:
+        print(f"[DRY-RUN] backward={speed}")
+
+
+def build_rover(dry_run: bool):
+    if dry_run:
+        return DryRunPicarx()
+
+    Picarx = importlib.import_module("picarx").Picarx
+    return Picarx()
+
+
 def main(argv: list[str] | None = None) -> None:
     args = build_parser().parse_args(argv)
 
-    Picarx = importlib.import_module("picarx").Picarx
-
-    px = Picarx()
-    px.set_dir_servo_angle(0)
-    px.forward(0)
-
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    px = build_rover(args.dry_run)
+    safe_stop(px)
 
     print(f"Cerco il server all'indirizzo {args.host}:{args.port}...")
-    while True:
-        try:
-            client_socket.connect((args.host, args.port))
-            print("Connesso. Modalita arcade a 4 direzioni attiva.")
-            break
-        except OSError:
-            time.sleep(args.retry_delay)
+
+    current_command = "STOP"
+    last_command_time = time.monotonic()
 
     try:
         while True:
-            data = client_socket.recv(1024).decode("utf-8")
-            if not data:
-                break
+            client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            client_socket.settimeout(args.socket_timeout)
 
-            command = extract_latest_command(data)
-            if command is None:
+            try:
+                client_socket.connect((args.host, args.port))
+                print("Connesso. Modalita comandi rover attiva.")
+            except OSError:
+                client_socket.close()
+                time.sleep(args.retry_delay)
                 continue
 
-            apply_command(
-                px,
-                command,
-                args.speed,
-                args.steering_angle,
-                args.steering_inversion,
-            )
+            try:
+                while True:
+                    try:
+                        data = client_socket.recv(1024).decode("utf-8")
+                    except socket.timeout:
+                        if time.monotonic() - last_command_time > args.command_timeout and current_command != "STOP":
+                            apply_command(px, "STOP", args.speed, args.steering_angle, args.steering_inversion)
+                            current_command = "STOP"
+                        continue
+
+                    if not data:
+                        raise ConnectionError("Connessione chiusa dal server.")
+
+                    command = extract_latest_command(data)
+                    if command is None:
+                        continue
+
+                    last_command_time = time.monotonic()
+                    if command != current_command:
+                        apply_command(
+                            px,
+                            command,
+                            args.speed,
+                            args.steering_angle,
+                            args.steering_inversion,
+                        )
+                        current_command = command
+            except (OSError, ConnectionError):
+                if current_command != "STOP":
+                    apply_command(px, "STOP", args.speed, args.steering_angle, args.steering_inversion)
+                    current_command = "STOP"
+                client_socket.close()
+                time.sleep(args.retry_delay)
     except KeyboardInterrupt:
         print("\nSpegnimento...")
     finally:
-        px.forward(0)
-        px.set_dir_servo_angle(0)
-        client_socket.close()
+        safe_stop(px)
 
 
 if __name__ == "__main__":
