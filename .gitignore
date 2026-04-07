@@ -5,8 +5,12 @@ __pycache__/
 
 # Virtual environments
 .venv/
+.venv-robomaster38/
 venv/
 env/
+
+# Local temporary workspace
+.tmp/
 
 # Build and packaging
 build/
