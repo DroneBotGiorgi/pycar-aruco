@@ -43,7 +43,7 @@ from server.settings import (
     DEFAULT_VEL_SLOW,
     DEFAULT_WINDOW_TITLE,
 )
-from tools.robomaster_sim_api import SimRoboMasterCommandApi
+from team1.simulator_api import SimRoboMasterCommandApi
 
 
 ZONE_NAMES = ["DRITTO", "V 100", "STOP", "INDIETRO", "AV-SX", "SX", "AV-DX", "DX"]

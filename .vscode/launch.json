@@ -5,7 +5,7 @@
       "name": "Drone | Fire Detect",
       "type": "debugpy",
       "request": "launch",
-      "module": "fire_detect.main",
+      "module": "detector.main",
       "console": "integratedTerminal",
       "args": [
         "--source",
@@ -41,7 +41,7 @@
       "name": "_Simulation | TCP Rover",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/tools/simulator_client.py",
+      "program": "${workspaceFolder}/team1/simulator_client.py",
       "presentation": {
         "hidden": true
       },

@@ -16,17 +16,17 @@ Per installazione, requisiti runtime, caveat RoboMaster e note di deployment, ve
 - `team3/settings.h`: configurazione centralizzata del client Arduino (Wi-Fi, server, pin, sensore, timing evasione).
 - `team3/arduino_c_compat.h`: utility C minimale per confronto stringhe lato firmware Arduino.
 
-- `fire_detect/`: modulo nativo del repository per rilevamento fuoco via pipeline YOLO su stream ADB, webcam o RTMP.
+- `detector/`: modulo nativo del repository per rilevamento fuoco via pipeline YOLO su stream ADB, webcam o RTMP.
 
-- `tools/simulator_client.py`: client TCP con simulazione visiva 2D per test senza rover reale.
-- `tools/robomaster_sim_api.py`: adapter simulato per validare la logica RoboMaster senza hardware.
+- `team1/simulator_client.py`: client TCP con simulazione visiva 2D per test senza rover reale.
+- `team1/simulator_api.py`: adapter simulato per validare la logica RoboMaster senza hardware.
 - `tools/generate_markers.py`: genera marker ArUco stampabili in `tools/printables`.
 
 - `install.md`: guida completa a installazione, caveat runtime e deployment per i vari target.
 
 ## Come funziona
 
-Fase 1: il drone esegue il modulo `fire_detect` per individuare il fuoco nel flusso video.
+Fase 1: il drone esegue il modulo `detector` per individuare il fuoco nel flusso video.
 
 Fase 2: lo stesso drone, usando la camera che inquadra il marker ArUco, esegue `server/server.py` e guida il rover scelto verso il fuoco tramite backend PiCar, Arduino o RoboMaster.
 
@@ -45,11 +45,11 @@ Nel file `.vscode/launch.json` sono disponibili profili unificati per rilevament
 
 ### Rilevamento fuoco
 
-- `Drone | Fire Detect`: avvia `fire_detect.main` con webcam e pannello GUI.
+- `Drone | Fire Detect`: avvia `detector.main` con webcam e pannello GUI.
 
 ### Simulazione
 
-- `Simulation | TCP Rover`: avvio combinato server TCP + rover simulato (`tools/simulator_client.py`).
+- `Simulation | TCP Rover`: avvio combinato server TCP + rover simulato (`team1/simulator_client.py`).
 - `Simulation | RoboMaster`: avvio server con backend RoboMaster simulato (senza hardware).
 
 ### Hardware reale
@@ -82,7 +82,7 @@ DroneBotGiorgi/
 ├── server/
 │   ├── server.py          # Server principale: visione, ArUco, HUD, comandi
 │   └── settings.py        # Tutti i parametri runtime
-├── fire_detect/
+├── detector/
 │   ├── main.py            # Entry point CLI (--source, --conf, --gui)
 │   ├── pipeline.py        # Loop rilevamento frame → YOLOv8 → output
 │   ├── detector.py        # Wrapper YoloDetector
@@ -91,7 +91,9 @@ DroneBotGiorgi/
 │   ├── settings.yaml      # Configurazione default
 │   └── models/best_test.pt  # Pesi YOLOv8
 ├── team1/
-│   └── robomaster_api.py  # Adapter SDK DJI (chassis.drive_speed)
+│   ├── robomaster_api.py  # Adapter SDK DJI (chassis.drive_speed)
+│   ├── simulator_api.py   # Adapter RoboMaster simulato
+│   └── simulator_client.py # Client TCP simulato 2D
 ├── team2/
 │   └── client_picar.py    # Client TCP rover PiCar-X
 ├── team3/
@@ -101,8 +103,6 @@ DroneBotGiorgi/
 ├── tools/
 │   ├── calibration.py         # Calibrazione telecamera drone (chessboard → camera_matrix)
 │   ├── calibration_output.yaml  # Output calibrazione (generato da calibration.py)
-│   ├── simulator_client.py    # Client simulato 2D
-│   ├── robomaster_sim_api.py  # RoboMaster simulato
 │   └── generate_markers.py   # Generatore marker ArUco
 ├── documentation/
 │   ├── team1/

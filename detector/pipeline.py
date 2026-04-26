@@ -9,8 +9,8 @@ from typing import Optional, Protocol
 import cv2
 from ultralytics.engine.results import Results
 
-from fire_detect.config import RuntimeConfig
-from fire_detect.detector import YoloDetector
+from detector.config import RuntimeConfig
+from detector.detector import YoloDetector
 
 
 class CaptureSource(Protocol):

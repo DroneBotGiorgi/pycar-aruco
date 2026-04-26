@@ -9,7 +9,7 @@ Ruolo nel flusso completo:
 Contenuto operativo:
 - pipeline YOLO (acquisizione, detection, overlay, GUI)
 - config YAML singolo
-- modello di esempio in `fire_detect/models/best_test.pt`
+- modello di esempio in `detector/models/best_test.pt`
 
 ## Architettura
 
@@ -18,12 +18,12 @@ Contenuto operativo:
 - **Overlay** — finestra OpenCV dedicata con bounding box persistenti (nessun lampeggio tra un'inferenza e la successiva)
 - **GUI** — pannello Tkinter opzionale: hotkey `1..9` per switch rapido modello, slider live per `conf`, `iou`, `max_det`, `imgsz`, Hz inferenza
 - **Hardware** — auto-detect: CUDA se disponibile, altrimenti CPU
-- **Config** — YAML singolo `fire_detect/settings.yaml`
+- **Config** — YAML singolo `detector/settings.yaml`
 
 ## Struttura
 
 ```
-fire_detect/
+detector/
 ├── main.py          # Entry point CLI
 ├── pipeline.py      # Loop capture → detect → overlay
 ├── capture.py       # Stream ADB+FFmpeg e webcam
@@ -42,26 +42,26 @@ fire_detect/
    - `tools/platform-tools/adb.exe`
    - `tools/ffmpeg/bin/ffmpeg.exe`
    - `tools/scrcpy/scrcpy.exe`
-3. Modelli `.pt` in `fire_detect/models/`
+3. Modelli `.pt` in `detector/models/`
 
 ## Avvio rapido
 
 1. Installa dipendenze:
 
 ```powershell
-python -m pip install -r fire_detect/requirements.txt
+python -m pip install -r detector/requirements.txt
 ```
 
 2. Avvia con webcam:
 
 ```powershell
-python -m fire_detect.main --source webcam --webcam-index 0 --gui
+python -m detector.main --source webcam --webcam-index 0 --gui
 ```
 
 3. Avvia con Android ADB (tool presenti in `tools/`):
 
 ```powershell
-python -m fire_detect.main --source adb --gui
+python -m detector.main --source adb --gui
 ```
 
 In VS Code è disponibile anche il profilo `Drone | Fire Detect`.
@@ -102,4 +102,4 @@ runtime:
   - aumenta `runtime.yolo_interval_sec` (es. `0.5` = YOLO ogni 500 ms)
   - usa GPU CUDA quando disponibile
 
-Config runtime: `fire_detect/settings.yaml`
+Config runtime: `detector/settings.yaml`

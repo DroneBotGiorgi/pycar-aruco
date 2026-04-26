@@ -3,7 +3,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
-from fire_detect.pipeline import RuntimeState
+from detector.pipeline import RuntimeState
 
 
 class ControlPanel:

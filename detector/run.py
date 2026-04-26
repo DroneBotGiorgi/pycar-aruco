@@ -1,4 +1,4 @@
-from fire_detect.main import cli_main
+from detector.main import cli_main
 
 if __name__ == "__main__":
     raise SystemExit(cli_main())

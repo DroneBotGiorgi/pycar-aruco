@@ -15,7 +15,7 @@ capture:
 runtime:
   window_name: "Drone Detector Fire"
   show_metrics: true
-  log_file: "fire_detect/logs/runtime.log"
+  log_file: "detector/logs/runtime.log"
   yolo_interval_sec: 0.0
   detection_conf_threshold: 0.6
   detection_iou_threshold: 0.30
@@ -26,11 +26,11 @@ models:
   default: "best_test"
   registry:
     best_test:
-      path: "fire_detect/models/best_test.pt"
+      path: "detector/models/best_test.pt"
       conf: 0.35
       iou: 0.45
     caruso_fuoco1:                  
-      path: "fire_detect/models/caruso_fuoco1.pt" 
+      path: "detector/models/caruso_fuoco1.pt" 
       conf: 0.35
       iou: 0.45
 

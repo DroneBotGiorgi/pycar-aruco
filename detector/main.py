@@ -20,7 +20,7 @@ def _setup_logging(log_file: Path) -> None:
 
 def cli_main() -> int:
     parser = argparse.ArgumentParser(description="Low latency Android stream YOLO detector")
-    parser.add_argument("--config", type=Path, default=Path("fire_detect/settings.yaml"))
+    parser.add_argument("--config", type=Path, default=Path("detector/settings.yaml"))
     parser.add_argument("--gui", action="store_true", help="Enable Tkinter control panel")
     parser.add_argument(
         "--source",
@@ -42,11 +42,11 @@ def cli_main() -> int:
     )
     args = parser.parse_args()
 
-    from fire_detect.capture import ADBFFmpegCapture, RTMPCapture, WebcamCapture, query_device_resolution
-    from fire_detect.config import load_config
-    from fire_detect.detector import YoloDetector
-    from fire_detect.gui import ControlPanel
-    from fire_detect.pipeline import RuntimeState, run_pipeline
+    from detector.capture import ADBFFmpegCapture, RTMPCapture, WebcamCapture, query_device_resolution
+    from detector.config import load_config
+    from detector.detector import YoloDetector
+    from detector.gui import ControlPanel
+    from detector.pipeline import RuntimeState, run_pipeline
 
     cfg = load_config(args.config)
     _setup_logging(cfg.runtime.log_file)

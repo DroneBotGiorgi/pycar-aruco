@@ -104,7 +104,7 @@ In VS Code e gia presente il profilo launch dedicato RoboMaster che usa quel ven
 Per test funzionale del protocollo comandi senza rover reale:
 
 ```powershell
-python tools/simulator_client.py --host 127.0.0.1 --port 9999
+python team1/simulator_client.py --host 127.0.0.1 --port 9999
 ```
 
 Per testare il mapping RoboMaster senza device fisico:
@@ -120,24 +120,24 @@ Puoi anche usare direttamente i due profili launch di simulazione in [.vscode/la
 
 ## 8. Modulo Fire Detect integrato
 
-La cartella [fire_detect](fire_detect) fa parte del repository e contiene il modulo di rilevamento fuoco usato dal drone nella prima fase operativa.
+La cartella [detector](detector) fa parte del repository e contiene il modulo di rilevamento fuoco usato dal drone nella prima fase operativa.
 
 Installa dipendenze dedicate:
 
 ```powershell
-python -m pip install -r fire_detect/requirements.txt
+python -m pip install -r detector/requirements.txt
 ```
 
 Avvio rapido webcam:
 
 ```powershell
-python -m fire_detect.main --source webcam --webcam-index 0 --gui
+python -m detector.main --source webcam --webcam-index 0 --gui
 ```
 
 Avvio con Android ADB + FFmpeg (se i tool sono disponibili in `tools/`):
 
 ```powershell
-python -m fire_detect.main --source adb --gui
+python -m detector.main --source adb --gui
 ```
 
 In VS Code puoi avviare direttamente il profilo `Drone | Fire Detect`.

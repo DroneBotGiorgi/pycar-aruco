@@ -6,7 +6,7 @@ import torch
 from ultralytics.engine.results import Results
 from ultralytics import YOLO
 
-from fire_detect.config import ModelConfig
+from detector.config import ModelConfig
 
 
 class YoloDetector:
