@@ -1,11 +1,28 @@
 {
-  "version": "0.2.0",
+  "version": "1.0.0",
   "configurations": [
     {
-      "name": "Sim | Server Radar (TCP)",
+      "name": "Drone | Fire Detect",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "fire_detect.main",
+      "console": "integratedTerminal",
+      "args": [
+        "--source",
+        "webcam",
+        "--webcam-index",
+        "${input:cameraIndex}",
+        "--gui"
+      ]
+    },
+    {
+      "name": "_Simulation | TCP Server",
       "type": "debugpy",
       "request": "launch",
       "module": "server.server",
+      "presentation": {
+        "hidden": true
+      },
       "console": "integratedTerminal",
       "args": [
         "--host",
@@ -21,10 +38,13 @@
       ]
     },
     {
-      "name": "Sim | Rover Visuale (TCP Client)",
+      "name": "_Simulation | TCP Rover",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/tools/simulator_client.py",
+      "presentation": {
+        "hidden": true
+      },
       "console": "integratedTerminal",
       "args": [
         "--host",
@@ -34,10 +54,13 @@
       ]
     },
     {
-      "name": "Sim | Server Radar (RoboMaster Sim)",
+      "name": "_Simulation | RoboMaster",
       "type": "debugpy",
       "request": "launch",
       "module": "server.server",
+      "presentation": {
+        "hidden": true
+      },
       "console": "integratedTerminal",
       "args": [
         "--transport",
@@ -49,11 +72,11 @@
         "--robomaster-speed",
         "${input:robomasterSpeed}",
         "--window-title",
-        "Vision Server (RoboMaster Sim API)"
+        "Vision Server (Simulation RoboMaster)"
       ]
     },
     {
-      "name": "HW | Server Radar (PiCar TCP)",
+      "name": "Drone | Guide PiCar",
       "type": "debugpy",
       "request": "launch",
       "module": "server.server",
@@ -72,7 +95,7 @@
       ]
     },
     {
-      "name": "HW | Server Radar (Arduino TCP)",
+      "name": "Drone | Guide Arduino",
       "type": "debugpy",
       "request": "launch",
       "module": "server.server",
@@ -91,7 +114,7 @@
       ]
     },
     {
-      "name": "HW | Server Radar (RoboMaster API)",
+      "name": "Drone | Guide RoboMaster",
       "type": "debugpy",
       "request": "launch",
       "module": "server.server",
@@ -115,10 +138,16 @@
   ],
   "compounds": [
     {
-      "name": "Sim | Stack Completo (Server + Rover Visuale)",
+      "name": "Simulation | TCP Rover",
       "configurations": [
-        "Sim | Server Radar (TCP)",
-        "Sim | Rover Visuale (TCP Client)"
+        "_Simulation | TCP Server",
+        "_Simulation | TCP Rover"
+      ]
+    },
+    {
+      "name": "Simulation | RoboMaster",
+      "configurations": [
+        "_Simulation | RoboMaster"
       ]
     }
   ],
