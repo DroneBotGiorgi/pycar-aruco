@@ -110,7 +110,7 @@ void eseguiManovraEvasiva() {
   stopCar();
   delay(ARDUINO_EMERGENCY_STOP_DELAY_MS);
 
-  if (ultimaAzione == "W" || ultimaAzione == "WD" || ultimaAzione == "WA") {
+  if (ultimaAzione == "W" || ultimaAzione == "W_MAX" || ultimaAzione == "WD" || ultimaAzione == "WA") {
     moveBack(ARDUINO_EMERGENCY_PWM);
     delay(ARDUINO_BACK_STRAIGHT_MS);
   } else if (ultimaAzione == "A") {
@@ -148,7 +148,7 @@ void executeCommand(String data) {
 
     ultimaAzione = cmd;
 
-    if (cmd == "W") {
+    if (cmd == "W" || cmd == "W_MAX") {
       moveForward(speed);
     } else if (cmd == "S") {
       moveBack(speed);
