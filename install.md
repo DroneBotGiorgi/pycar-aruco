@@ -57,7 +57,7 @@ Verifica import SDK:
 Flusso operativo:
 
 1. Avvia [server/server.py](server/server.py) sul PC con webcam (venv principale `.venv`).
-2. Avvia [picar/client_picar.py](picar/client_picar.py) sul rover PiCar.
+2. Avvia [team2/client_picar.py](team2/client_picar.py) sul rover PiCar.
 
 Esempio server:
 
@@ -68,20 +68,20 @@ python -m server.server --host 0.0.0.0 --port 9999 --camera 0 --marker-id 0
 Esempio client PyCar:
 
 ```powershell
-python -m picar.client_picar --host 192.168.1.105 --port 9999
+python -m team2.client_picar --host 192.168.1.105 --port 9999
 ```
 
 ## 5. Deployment: Arduino (TCP client)
 
-File firmware: [arduino/client_arduino.c](arduino/client_arduino.c)
+File firmware: [team3/client_arduino.c](team3/client_arduino.c)
 
 Configurazione centralizzata firmware:
 
-- rete, pin e velocita in [arduino/settings.h](arduino/settings.h)
+- rete, pin e velocita in [team3/settings.h](team3/settings.h)
 
 Passi:
 
-1. Compila e carica [arduino/client_arduino.c](arduino/client_arduino.c) sulla board Arduino con WiFi.
+1. Compila e carica [team3/client_arduino.c](team3/client_arduino.c) sulla board Arduino con WiFi.
 2. Avvia [server/server.py](server/server.py) sul PC (venv principale `.venv`) con transport TCP (default).
 
 ## 6. Deployment: RoboMaster API (senza client TCP separato)

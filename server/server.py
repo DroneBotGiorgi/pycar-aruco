@@ -7,7 +7,7 @@ import cv2
 import cv2.aruco as aruco
 import numpy as np
 
-from robomaster.robomaster_api import RoboMasterCommandApi
+from team1.robomaster_api import RoboMasterCommandApi
 from server.settings import (
     DEFAULT_BRIDGE_FAKE_DISTANCE_CM,
     DEFAULT_BRIDGE_JUMP_DURATION_SEC,

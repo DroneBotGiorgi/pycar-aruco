@@ -10,11 +10,11 @@ Per installazione, requisiti runtime, caveat RoboMaster e note di deployment, ve
 
 - `server/server.py`: acquisisce il video, rileva il marker ArUco e invia comandi radar con protocollo `cmd,v_mult,distanza`.
 - `server/settings.py`: file principale con i parametri runtime (rete, calibrazione camera, HUD, ponte, velocita, client).
-- `robomaster/robomaster_api.py`: adapter API per RoboMaster con supporto comandi estesi e sicurezza ToF opzionale.
-- `picar/client_picar.py`: client TCP Picar-X con parsing `cmd,v_mult,distanza`, anti ostacolo e riconnessione automatica.
-- `arduino/client_arduino.c`: firmware client TCP per rover Arduino con anti-lag, anti ostacolo e comandi estesi.
-- `arduino/settings.h`: configurazione centralizzata del client Arduino (Wi-Fi, server, pin, sensore, timing evasione).
-- `arduino/arduino_c_compat.h`: utility C minimale per confronto stringhe lato firmware Arduino.
+- `team1/robomaster_api.py`: adapter API per RoboMaster con supporto comandi estesi e sicurezza ToF opzionale.
+- `team2/client_picar.py`: client TCP Picar-X con parsing `cmd,v_mult,distanza`, anti ostacolo e riconnessione automatica.
+- `team3/client_arduino.c`: firmware client TCP per rover Arduino con anti-lag, anti ostacolo e comandi estesi.
+- `team3/settings.h`: configurazione centralizzata del client Arduino (Wi-Fi, server, pin, sensore, timing evasione).
+- `team3/arduino_c_compat.h`: utility C minimale per confronto stringhe lato firmware Arduino.
 
 - `fire_detect/`: modulo nativo del repository per rilevamento fuoco via pipeline YOLO su stream ADB, webcam o RTMP.
 
@@ -90,14 +90,14 @@ DroneBotGiorgi/
 │   ├── gui.py             # Pannello Tkinter opzionale
 │   ├── settings.yaml      # Configurazione default
 │   └── models/best_test.pt  # Pesi YOLOv8
-├── picar/
+├── team1/
+│   └── robomaster_api.py  # Adapter SDK DJI (chassis.drive_speed)
+├── team2/
 │   └── client_picar.py    # Client TCP rover PiCar-X
-├── arduino/
+├── team3/
 │   ├── client_arduino.c   # Firmware Arduino (TCP, motori, ultrasuoni)
 │   ├── settings.h         # Costanti compilate (Wi-Fi, pin, soglie)
 │   └── arduino_c_compat.h # Utility C per parsing comandi
-├── robomaster/
-│   └── robomaster_api.py  # Adapter SDK DJI (chassis.drive_speed)
 ├── tools/
 │   ├── calibration.py         # Calibrazione telecamera drone (chessboard → camera_matrix)
 │   ├── calibration_output.yaml  # Output calibrazione (generato da calibration.py)
@@ -105,15 +105,18 @@ DroneBotGiorgi/
 │   ├── robomaster_sim_api.py  # RoboMaster simulato
 │   └── generate_markers.py   # Generatore marker ArUco
 ├── documentation/
-│   ├── flusso_picar.md        # Flusso operativo soluzione PiCar
-│   ├── flusso_arduino.md      # Flusso operativo soluzione Arduino
-│   ├── flusso_robomaster.md   # Flusso operativo soluzione RoboMaster
-│   ├── flowchart_picar.md     # Diagramma Mermaid PiCar
-│   ├── flowchart_arduino.md   # Diagramma Mermaid Arduino
-│   ├── flowchart_robomaster.md # Diagramma Mermaid RoboMaster
-│   ├── bom_sbom_picar.md      # BOM + SBOM soluzione PiCar
-│   ├── bom_sbom_arduino.md    # BOM + SBOM soluzione Arduino
-│   └── bom_sbom_robomaster.md # BOM + SBOM soluzione RoboMaster
+│   ├── team1/
+│   │   ├── team1_flusso.md
+│   │   ├── team1_flowchart.md
+│   │   └── team1_bom_sbom.md
+│   ├── team2/
+│   │   ├── team2_flusso.md
+│   │   ├── team2_flowchart.md
+│   │   └── team2_bom_sbom.md
+│   └── team3/
+│       ├── team3_flusso.md
+│       ├── team3_flowchart.md
+│       └── team3_bom_sbom.md
 ├── README.md              # README tecnico con protocollo e profili launch
 ├── INTRO.md               # Questo file: introduzione e guida rapida
 └── INSTALL.md             # Installazione e deployment completo
