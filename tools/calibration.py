@@ -1,5 +1,5 @@
 """
-Camera calibration utility for rover-aruco.
+Camera calibration utility for DroneBotGiorgi.
 
 Acquires frames of a chessboard pattern from the drone virtual camera (or any
 webcam), computes the camera intrinsics via cv2.calibrateCamera, prints the
@@ -39,7 +39,7 @@ MIN_FRAMES = 5  # absolute minimum; 15+ recommended
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Chessboard camera calibration for rover-aruco.",
+        description="Chessboard camera calibration for DroneBotGiorgi.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument("--webcam-index", type=int, default=0, metavar="N",
@@ -144,7 +144,7 @@ def run(args: argparse.Namespace) -> int:
             display, f"Frame salvati: {len(objpoints)}",
             (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2,
         )
-        cv2.imshow("Calibrazione — rover-aruco", display)
+        cv2.imshow("Calibrazione — DroneBotGiorgi", display)
 
         key = cv2.waitKey(1) & 0xFF
 

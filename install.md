@@ -3,7 +3,7 @@
 ![version](https://img.shields.io/badge/version-1.0-blue)
 
 Questa guida raccoglie tutte le istruzioni di installazione e i caveat runtime.
-Il file [README.md](README.md) descrive invece le funzionalita del progetto.
+Il file [README.md](README.md) descrive il flusso completo: il drone rileva il fuoco e poi guida il rover selezionato verso il target usando il marker ArUco.
 
 ## 1. Prerequisiti
 
@@ -113,4 +113,31 @@ Per testare il mapping RoboMaster senza device fisico:
 python -m server.server --transport robomaster-sim --camera 0 --marker-id 0 --robomaster-speed 0.5
 ```
 
-Puoi anche usare i profili launch Sim in [.vscode/launch.json](.vscode/launch.json).
+Puoi anche usare direttamente i due profili launch di simulazione in [.vscode/launch.json](.vscode/launch.json):
+
+- `Simulation | TCP Rover`
+- `Simulation | RoboMaster`
+
+## 8. Modulo Fire Detect integrato
+
+La cartella [fire_detect](fire_detect) fa parte del repository e contiene il modulo di rilevamento fuoco usato dal drone nella prima fase operativa.
+
+Installa dipendenze dedicate:
+
+```powershell
+python -m pip install -r fire_detect/requirements.txt
+```
+
+Avvio rapido webcam:
+
+```powershell
+python -m fire_detect.main --source webcam --webcam-index 0 --gui
+```
+
+Avvio con Android ADB + FFmpeg (se i tool sono disponibili in `tools/`):
+
+```powershell
+python -m fire_detect.main --source adb --gui
+```
+
+In VS Code puoi avviare direttamente il profilo `Drone | Fire Detect`.

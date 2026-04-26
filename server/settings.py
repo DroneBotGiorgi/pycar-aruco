@@ -1,4 +1,4 @@
-"""Centralized runtime settings for rover-aruco."""
+"""Centralized runtime settings for DroneBotGiorgi."""
 
 PROJECT_VERSION = "1.0"
 
