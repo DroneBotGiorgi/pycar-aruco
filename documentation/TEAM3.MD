@@ -2,7 +2,9 @@
 
 Le parti comuni del progetto (detector, tracking ArUco, logica HUD, protocollo logico dei comandi) sono descritte in [README.MD](../README.MD). Questo documento riporta solo i dettagli specifici della variante firmware Arduino.
 
-Diagramma di flusso: [TEAM3_FLOW.svg](TEAM3_FLOW.svg).
+Diagramma di flusso:
+
+![TEAM3 flow](TEAM3_FLOW.svg)
 
 ## In breve
 

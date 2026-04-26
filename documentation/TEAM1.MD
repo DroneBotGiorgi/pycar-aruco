@@ -2,7 +2,9 @@
 
 Le parti comuni del progetto (pipeline drone, detector YOLO, HUD condiviso, protocollo logico dei comandi) sono descritte in [README.MD](../README.MD). Questo documento copre solo le scelte implementative specifiche della soluzione RoboMaster.
 
-Diagramma di flusso: [TEAM1_FLOW.svg](TEAM1_FLOW.svg).
+Diagramma di flusso:
+
+![TEAM1 flow](TEAM1_FLOW.svg)
 
 ## In breve
 

@@ -2,7 +2,9 @@
 
 Le parti comuni del progetto (detector, tracking ArUco, logica HUD, protocollo logico dei comandi) sono descritte in [README.MD](../README.MD). Questo documento riporta solo i dettagli specifici del client PiCar-X.
 
-Diagramma di flusso: [TEAM2_FLOW.svg](TEAM2_FLOW.svg).
+Diagramma di flusso:
+
+![TEAM2 flow](TEAM2_FLOW.svg)
 
 ## In breve
 
