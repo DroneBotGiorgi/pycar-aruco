@@ -10,10 +10,10 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from settings import DEFAULT_COMMAND_TIMEOUT, DEFAULT_PORT, DEFAULT_RETRY_DELAY, DEFAULT_SOCKET_TIMEOUT
+from server.settings import DEFAULT_COMMAND_TIMEOUT, DEFAULT_PORT, DEFAULT_RETRY_DELAY, DEFAULT_SOCKET_TIMEOUT
 
 
-VALID_COMMANDS = {"W", "S", "A", "D", "STOP"}
+VALID_COMMANDS = {"W", "W_MAX", "S", "A", "D", "WA", "WD", "STOP"}
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -49,7 +49,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def extract_latest_command(data: str) -> str | None:
-    for command in reversed(data.splitlines()):
+    for raw_line in reversed(data.splitlines()):
+        line = raw_line.strip()
+        if not line:
+            continue
+        command = line.split(",", 1)[0].strip()
         if command in VALID_COMMANDS:
             return command
     return None
@@ -162,6 +166,12 @@ class RoverSimulator:
         elif self.current_command == "D":
             move_speed = self.args.max_speed * 0.75
             turn_speed = self.args.turn_rate
+        elif self.current_command == "WA":
+            move_speed = self.args.max_speed * 0.8
+            turn_speed = -self.args.turn_rate * 0.7
+        elif self.current_command == "WD":
+            move_speed = self.args.max_speed * 0.8
+            turn_speed = self.args.turn_rate * 0.7
 
         self.heading_deg += turn_speed * dt
         theta = math.radians(self.heading_deg)

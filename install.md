@@ -1,9 +1,9 @@
 # Install and Deployment Guide
 
-![version](https://img.shields.io/badge/version-0.5.2-blue)
+![version](https://img.shields.io/badge/version-1.0-blue)
 
 Questa guida raccoglie tutte le istruzioni di installazione e i caveat runtime.
-Il file [README.md](README.md) resta focalizzato sulle funzionalita del progetto.
+Il file [README.md](README.md) descrive invece le funzionalita del progetto.
 
 ## 1. Prerequisiti
 
@@ -56,45 +56,45 @@ Verifica import SDK:
 
 Flusso operativo:
 
-1. Avvia [server.py](server.py) sul PC con webcam (venv principale `.venv`).
-2. Avvia [client_pycar.py](client_pycar.py) sul rover PyCar.
+1. Avvia [server/server.py](server/server.py) sul PC con webcam (venv principale `.venv`).
+2. Avvia [picar/client_picar.py](picar/client_picar.py) sul rover PiCar.
 
 Esempio server:
 
 ```powershell
-python server.py --host 0.0.0.0 --port 9999 --camera 0 --marker-id 0 --mode dpad
+python -m server.server --host 0.0.0.0 --port 9999 --camera 0 --marker-id 0
 ```
 
 Esempio client PyCar:
 
 ```powershell
-python client_pycar.py --host 192.168.1.105 --port 9999
+python -m picar.client_picar --host 192.168.1.105 --port 9999
 ```
 
 ## 5. Deployment: Arduino (TCP client)
 
-File firmware: [client_arduino.c](client_arduino.c)
+File firmware: [arduino/client_arduino.c](arduino/client_arduino.c)
 
 Configurazione centralizzata firmware:
 
-- rete, pin e velocita in [settings.h](settings.h)
+- rete, pin e velocita in [arduino/settings.h](arduino/settings.h)
 
 Passi:
 
-1. Compila e carica [client_arduino.c](client_arduino.c) sulla board Arduino con WiFi.
-2. Avvia [server.py](server.py) sul PC (venv principale `.venv`) con transport TCP (default).
+1. Compila e carica [arduino/client_arduino.c](arduino/client_arduino.c) sulla board Arduino con WiFi.
+2. Avvia [server/server.py](server/server.py) sul PC (venv principale `.venv`) con transport TCP (default).
 
 ## 6. Deployment: RoboMaster API (senza client TCP separato)
 
 Flusso operativo:
 
-1. Avvia [server.py](server.py) in modalita `--transport robomaster`.
+1. Avvia [server/server.py](server/server.py) in modalita `--transport robomaster`.
 2. Usa il venv dedicato `.venv-robomaster38`.
 
 Esempio:
 
 ```powershell
-.\.venv-robomaster38\Scripts\python.exe server.py --transport robomaster --camera 0 --marker-id 0 --mode dpad --robomaster-ip 192.168.1.101 --robomaster-speed 0.5
+.\.venv-robomaster38\Scripts\python.exe -m server.server --transport robomaster --camera 0 --marker-id 0 --robomaster-ip 192.168.1.101 --robomaster-speed 0.5
 ```
 
 In VS Code e gia presente il profilo launch dedicato RoboMaster che usa quel venv.
@@ -110,7 +110,7 @@ python tools/simulator_client.py --host 127.0.0.1 --port 9999
 Per testare il mapping RoboMaster senza device fisico:
 
 ```powershell
-python server.py --transport robomaster-sim --camera 0 --marker-id 0 --mode dpad --robomaster-speed 0.5
+python -m server.server --transport robomaster-sim --camera 0 --marker-id 0 --robomaster-speed 0.5
 ```
 
 Puoi anche usare i profili launch Sim in [.vscode/launch.json](.vscode/launch.json).

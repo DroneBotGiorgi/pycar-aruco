@@ -2,10 +2,10 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Sim | Vision Server",
+      "name": "Sim | Server Radar (TCP)",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/server.py",
+      "module": "server.server",
       "console": "integratedTerminal",
       "args": [
         "--host",
@@ -16,16 +16,12 @@
         "${input:cameraIndex}",
         "--marker-id",
         "${input:markerId}",
-        "--aruco-detector-profile",
-        "robust",
-        "--mode",
-        "${input:simMode}",
         "--window-title",
         "Vision Server (Sim)"
       ]
     },
     {
-      "name": "Sim | Visual Rover Client",
+      "name": "Sim | Rover Visuale (TCP Client)",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/tools/simulator_client.py",
@@ -38,10 +34,10 @@
       ]
     },
     {
-      "name": "Sim | Vision Server (RoboMaster Sim API)",
+      "name": "Sim | Server Radar (RoboMaster Sim)",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/server.py",
+      "module": "server.server",
       "console": "integratedTerminal",
       "args": [
         "--transport",
@@ -50,23 +46,17 @@
         "${input:cameraIndex}",
         "--marker-id",
         "${input:markerId}",
-        "--aruco-detector-profile",
-        "robust",
-        "--mode",
-        "${input:robomasterMode}",
         "--robomaster-speed",
         "${input:robomasterSpeed}",
-        "--command-heartbeat-sec",
-        "0",
         "--window-title",
         "Vision Server (RoboMaster Sim API)"
       ]
     },
     {
-      "name": "HW | Vision Server (Pycar TCP)",
+      "name": "HW | Server Radar (PiCar TCP)",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/server.py",
+      "module": "server.server",
       "console": "integratedTerminal",
       "args": [
         "--host",
@@ -77,19 +67,15 @@
         "${input:cameraIndex}",
         "--marker-id",
         "${input:markerId}",
-        "--aruco-detector-profile",
-        "robust",
-        "--mode",
-        "${input:hwMode}",
         "--window-title",
         "Vision Server (Pycar TCP)"
       ]
     },
     {
-      "name": "HW | Vision Server (Arduino TCP)",
+      "name": "HW | Server Radar (Arduino TCP)",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/server.py",
+      "module": "server.server",
       "console": "integratedTerminal",
       "args": [
         "--host",
@@ -100,19 +86,15 @@
         "${input:cameraIndex}",
         "--marker-id",
         "${input:markerId}",
-        "--aruco-detector-profile",
-        "robust",
-        "--mode",
-        "${input:arduinoMode}",
         "--window-title",
         "Vision Server (Arduino TCP)"
       ]
     },
     {
-      "name": "HW | Vision Server (RoboMaster API)",
+      "name": "HW | Server Radar (RoboMaster API)",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/server.py",
+      "module": "server.server",
       "python": "${workspaceFolder}/.venv-robomaster38/Scripts/python.exe",
       "console": "integratedTerminal",
       "args": [
@@ -122,10 +104,6 @@
         "${input:cameraIndex}",
         "--marker-id",
         "${input:markerId}",
-        "--aruco-detector-profile",
-        "robust",
-        "--mode",
-        "${input:robomasterMode}",
         "--robomaster-ip",
         "${input:robomasterIp}",
         "--robomaster-speed",
@@ -137,10 +115,10 @@
   ],
   "compounds": [
     {
-      "name": "Sim | Full Stack (Server + Visual Client)",
+      "name": "Sim | Stack Completo (Server + Rover Visuale)",
       "configurations": [
-        "Sim | Vision Server",
-        "Sim | Visual Rover Client"
+        "Sim | Server Radar (TCP)",
+        "Sim | Rover Visuale (TCP Client)"
       ]
     }
   ],
@@ -174,46 +152,6 @@
       "type": "promptString",
       "description": "ID marker ArUco",
       "default": "0"
-    },
-    {
-      "id": "simMode",
-      "type": "pickString",
-      "description": "Modalita server per simulazione",
-      "options": [
-        "chase",
-        "dpad"
-      ],
-      "default": "dpad"
-    },
-    {
-      "id": "hwMode",
-      "type": "pickString",
-      "description": "Modalita server per hardware reale",
-      "options": [
-        "chase",
-        "dpad"
-      ],
-      "default": "dpad"
-    },
-    {
-      "id": "arduinoMode",
-      "type": "pickString",
-      "description": "Modalita server per rover Arduino TCP",
-      "options": [
-        "dpad",
-        "chase"
-      ],
-      "default": "dpad"
-    },
-    {
-      "id": "robomasterMode",
-      "type": "pickString",
-      "description": "Modalita server per RoboMaster API",
-      "options": [
-        "dpad",
-        "chase"
-      ],
-      "default": "dpad"
     },
     {
       "id": "robomasterIp",

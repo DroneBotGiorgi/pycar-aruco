@@ -1,0 +1,259 @@
+import socket
+import sys
+import time
+import robomaster
+from robomaster import robot
+
+# ==========================================================
+#              PARAMETRI MODIFICABILI
+# ==========================================================
+SERVER_IP = '192.168.2.119'  # Inserite l'IP del PC Server
+SERVER_PORT = 9999
+USA_SENSORE_TOF = False     # True = Attivo, False = Disattivo
+SOGLIA_OSTACOLO_MM = 250    # Distanza di blocco (25cm)
+# ==========================================================
+
+distanza_rilevata = 9999
+
+def on_detect_distance(dist_info):
+    global distanza_rilevata
+    # Prendiamo il valore minimo tra i sensori attivi (escludendo gli 0)
+    valid_distances = [d for d in dist_info if d > 0]
+    if valid_distances:
+        distanza_rilevata = min(valid_distances)
+
+def start_client():
+    global distanza_rilevata
+    ep_robot = robot.Robot()
+    
+    try:
+        print("Inizializzazione RoboMaster...")
+        if not ep_robot.initialize(conn_type="rndis"):
+            print("❌ Errore: Robot non trovato su USB.")
+            return
+
+        # Impostiamo modalità FREE per sbloccare i moduli
+        ep_robot.set_robot_mode(mode=robot.FREE)
+
+        # Configurazione Sensore ToF
+        if USA_SENSORE_TOF:
+            print("📡 Sensore ToF: ATTIVATO")
+            tof_sensor = ep_robot.sensor
+            tof_sensor.sub_distance(freq=10, callback=on_detect_distance)
+        else:
+            print("⚪ Sensore ToF: DISATTIVATO (Ignorato)")
+
+        # Connessione al Server PC
+        print(f"Connessione al server {SERVER_IP}...")
+        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client_socket.settimeout(5.0)
+        
+        try:
+            client_socket.connect((SERVER_IP, SERVER_PORT))
+        except Exception as e:
+            print(f"❌ Impossibile connettersi al Server PC: {e}")
+            return
+
+        print("✅ SISTEMA PRONTO. In ascolto dei comandi...")
+
+        while True:
+            data = client_socket.recv(1024).decode().strip()
+            if not data: break
+            
+            # Formato atteso: "COMANDO,VELOCITA,DISTANZA_DRONE"
+            try:
+                parts = data.split(',')
+                cmd = parts[0]
+                v_mult = float(parts[1])
+                
+                # --- LOGICA DI SICUREZZA ---
+                # Se il sensore è attivo e vede un ostacolo vicino, forziamo lo STOP
+                # solo se il comando è di andare avanti (W, WA, WD o W_MAX)
+                if USA_SENSORE_TOF and distanza_rilevata < SOGLIA_OSTACOLO_MM:
+                    if cmd in ['W', 'WA', 'WD', 'W_MAX']:
+                        print(f"⚠️ OSTACOLO A {distanza_rilevata}mm! BLOCCO AVANZAMENTO.")
+                        cmd = 'STOP'
+                        v_mult = 0.0
+
+                # Esecuzione comandi
+                speed = 0.5 * v_mult
+                if cmd == 'W':        ep_robot.chassis.drive_speed(x=speed, y=0, z=0)
+                elif cmd == 'W_MAX':  ep_robot.chassis.drive_speed(x=0.8, y=0, z=0)
+                elif cmd == 'S':      ep_robot.chassis.drive_speed(x=-speed, y=0, z=0)
+                elif cmd == 'A':      ep_robot.chassis.drive_speed(x=0, y=0, z=-speed*40)
+                elif cmd == 'D':      ep_robot.chassis.drive_speed(x=0, y=0, z=speed*40)
+                elif cmd == 'WA':     ep_robot.chassis.drive_speed(x=speed, y=0, z=-speed*30)
+                elif cmd == 'WD':     ep_robot.chassis.drive_speed(x=speed, y=0, z=speed*30)
+                else:                 ep_robot.chassis.drive_speed(x=0, y=0, z=0)
+
+            except Exception as e:
+                print(f"Errore parsing: {e}")
+
+    except KeyboardInterrupt:
+        print("\nArresto manuale...")
+    except Exception as e:
+        print(f"\n❌ Errore Critico: {e}")
+    finally:
+        if USA_SENSORE_TOF:
+            try: tof_sensor.unsub_distance()
+            except: pass
+        client_socket.close()
+        ep_robot.close()
+        print("Connessione chiusa.")
+
+if __name__ == "__main__":
+    start_client()
+
+
+
+SERVER
+
+import cv2
+import cv2.aruco as aruco
+import numpy as np
+import socket
+import math
+import time
+
+# ==========================================================
+#              PARAMETRI CALIBRAZIONE REALE
+# ==========================================================
+camera_matrix = np.array([
+    [558.80333994,   0.        , 310.70361399],
+    [  0.        , 550.123456  , 240.123456  ],
+    [  0.        ,   0.        ,   1.        ]
+], dtype=np.float32)
+
+dist_coeffs = np.array([
+    [-0.12490098,  0.27240783, -0.00234196, -0.00097381, -0.79204814]
+], dtype=np.float32)
+
+# ==========================================================
+#              PARAMETRI DI GARA
+# ==========================================================
+ROVER_ID = 0           
+LATO_MARKER_CM = 19.0  
+DIST_MIN = 75          
+DIST_MAX = 175         
+DIST_PONTE_ATTIVAZIONE = 230  
+DURATA_SALTO = 2.5            
+VEL_SALTO = 0.8        
+# ==========================================================
+
+HOST = '0.0.0.0'
+PORT = 9999
+FONT_HUD = cv2.FONT_HERSHEY_SIMPLEX
+
+# Raggi delle zone HUD
+R1, R2, R3, R_MAX = 80, 150, 200, 2000
+ANG_C = 35
+A_T_LEFT, A_T_RIGHT = 270 - ANG_C, 270 + ANG_C
+A_B_LEFT, A_B_RIGHT = 90 + ANG_C, 90 - ANG_C
+
+ZONE_NAMES = ['DRITTO', 'V 100', 'STOP', 'INDIETRO', 'AV-SX', 'SX', 'AV-DX', 'DX']
+ZONE_CMDS  = ['W', 'W_MAX', 'STOP', 'S', 'WA', 'A', 'WD', 'D']
+
+obj_points = np.array([
+    [-LATO_MARKER_CM/2,  LATO_MARKER_CM/2, 0],
+    [ LATO_MARKER_CM/2,  LATO_MARKER_CM/2, 0],
+    [ LATO_MARKER_CM/2, -LATO_MARKER_CM/2, 0],
+    [-LATO_MARKER_CM/2, -LATO_MARKER_CM/2, 0]
+], dtype=np.float32)
+
+# ... (Le funzioni create_wedge, get_hud_masks e draw_hud_lines rimangono uguali) ...
+
+# --- AVVIO ---
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+server_socket.bind((HOST, PORT))
+server_socket.listen(1)
+server_socket.settimeout(0.01)
+
+cap = cv2.VideoCapture(0)
+aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_6X6_250)
+detector = aruco.ArucoDetector(aruco_dict)
+client_socket, hud_masks = None, None
+
+last_valid_dist = 0
+in_bridge_mode = False
+bridge_start_time = 0
+
+print("SERVER PRONTO - LOGICA DI CALIBRAZIONE ATTIVA")
+
+try:
+    while True:
+        ret, frame = cap.read()
+        if not ret: break
+        h, w = frame.shape[:2]
+        cx, cy = w // 2, h // 2
+        display_frame = frame.copy()
+
+        if client_socket is None:
+            try: client_socket, addr = server_socket.accept()
+            except: pass
+
+        if hud_masks is None: hud_masks = get_hud_masks(h, w, cx, cy)
+
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        corners, ids, _ = detector.detectMarkers(gray)
+        
+        cmd, v_mult, dist_attuale = 'STOP', 0.0, 0.0
+        stato_testo = "NESSUN MARKER"
+
+        if ids is not None and ROVER_ID in ids:
+            in_bridge_mode = False 
+            idx = np.where(ids == ROVER_ID)[0][0]
+            m_corners = corners[idx]
+            
+            # --- USO DELLA CALIBRAZIONE REALE ---
+            success, rvec, tvec = cv2.solvePnP(obj_points, m_corners[0], camera_matrix, dist_coeffs)
+            
+            if success:
+                dist_attuale = tvec[2][0]
+                last_valid_dist = dist_attuale 
+
+                if DIST_MIN <= dist_attuale <= DIST_MAX:
+                    mask_aruco = np.zeros((h, w), dtype=np.uint8)
+                    cv2.fillPoly(mask_aruco, [m_corners.astype(np.int32)], 255)
+                    intersezioni = [cv2.countNonZero(cv2.bitwise_and(mask_aruco, m)) for m in hud_masks]
+                    
+                    if sum(intersezioni) > 200:
+                        z_idx = np.argmax(intersezioni)
+                        cmd, stato_testo = ZONE_CMDS[z_idx], ZONE_NAMES[z_idx]
+                        v_mult = 1.0 if cmd == 'W_MAX' else 0.6
+                else:
+                    stato_testo = "FUORI RANGE"
+            cv2.polylines(display_frame, [m_corners.astype(np.int32)], True, (0,255,0), 3)
+
+        else:
+            # --- LOGICA SALTO PONTE ---
+            if last_valid_dist >= DIST_PONTE_ATTIVAZIONE and not in_bridge_mode:
+                in_bridge_mode = True
+                bridge_start_time = time.time()
+                print(f"🌉 PONTE! Distanza di lancio: {int(last_valid_dist)}cm")
+
+            if in_bridge_mode:
+                elapsed = time.time() - bridge_start_time
+                if elapsed < DURATA_SALTO:
+                    cmd, v_mult = 'W', VEL_SALTO
+                    stato_testo = f"SALTO PONTE {round(DURATA_SALTO - elapsed, 1)}s"
+                else:
+                    in_bridge_mode = False
+                    last_valid_dist = 0
+
+        # Invio e Visualizzazione
+        if client_socket:
+            try: client_socket.sendall(f"{cmd},{v_mult},{int(dist_attuale)}\n".encode())
+            except: client_socket = None
+
+        draw_hud_lines(display_frame, cx, cy, w)
+        cv2.putText(display_frame, f"STATO: {stato_testo}", (20, 40), FONT_HUD, 0.8, (0,255,255), 2)
+        cv2.imshow('HUD GARA PRO', display_frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'): break
+
+finally:
+    cap.release()
+    cv2.destroyAllWindows()
+    server_socket.close()
+
+

@@ -1,0 +1,480 @@
+Server 
+import cv2
+import cv2.aruco as aruco
+import numpy as np
+import socket
+import math
+import time
+
+# =================================================================
+# --- CONFIGURAZIONE GARA ( MODIFICARE PARAMETRI) ---
+# =================================================================
+
+# --- Rete e Marker ---
+HOST = '0.0.0.0'
+PORT = 9999
+ROVER_ID = 0           # ID del Marker ArUco sul rover
+LATO_MARKER_CM = 19.0  # Lato stampato del marker in cm
+
+# --- Distanze Guida Normale (in centimetri) ---
+DIST_MIN_GUIDA = 75    # Sotto questa distanza, il rover si ferma (troppo vicino)
+DIST_MAX_GUIDA = 175   # Oltre questa distanza, il rover si ferma (fuori range normale)
+
+# --- Gestione Velocità ---
+# Sotto i 100cm andrà a velocità lenta. Tra 100 e 140 media. Oltre 140 massima.
+DIST_LENTA = 100       
+DIST_MEDIA = 140       
+
+# Moltiplicatori Velocità Motori (da 0.0 a 1.0)
+VEL_LENTA = 0.4
+VEL_MEDIA = 0.7
+VEL_MAX   = 1.0
+VEL_RETRO = 0.5        # Velocità quando fa retromarcia
+
+# --- NOVITA': LOGICA SALTO OSTACOLI / PONTE ---
+DISTANZA_TRIGGER_PONTE = 240  # Cm a cui scatta il "salto" (Ho messo 240 per sicurezza)
+DURATA_SALTO_PONTE = 2.0      # Secondi in cui il rover andrà dritto alla cieca
+
+# =================================================================
+# --- FINE CONFIGURAZIONE GARA (SOTTO NON TOCCARE) ---
+# =================================================================
+
+# --- RAGGI E ANGOLI HUD ---
+R1, R2, R3, R_MAX = 80, 150, 200, 2000
+ANG_C = 35
+A_T_LEFT, A_T_RIGHT = 270 - ANG_C, 270 + ANG_C
+A_B_LEFT, A_B_RIGHT = 90 + ANG_C, 90 - ANG_C
+
+ZONE_NAMES = ['DRITTO', 'V 100', 'STOP', 'INDIETRO', 'AV-SX', 'SX', 'AV-DX', 'DX']
+# Nota: La zona V100 manda il comando 'W' ma userà VEL_MAX
+ZONE_CMDS  = ['W', 'W', 'STOP', 'S', 'WA', 'A', 'WD', 'D']
+ZONE_COLORS = [(0,255,0),(255,255,255),(0,0,255),(0,165,255),(0,255,150),(255,0,255),(150,255,0),(255,255,0)]
+
+obj_points = np.array([
+    [-LATO_MARKER_CM/2,  LATO_MARKER_CM/2, 0],
+    [ LATO_MARKER_CM/2,  LATO_MARKER_CM/2, 0],
+    [ LATO_MARKER_CM/2, -LATO_MARKER_CM/2, 0],
+    [-LATO_MARKER_CM/2, -LATO_MARKER_CM/2, 0]
+], dtype=np.float32)
+
+# --- FUNZIONI HUD ---
+def create_wedge(h, w, cx, cy, start_ang, end_ang, r_min, r_max):
+    mask = np.zeros((h, w), dtype=np.uint8)
+    cv2.ellipse(mask, (cx, cy), (r_max, r_max), 0, start_ang, end_ang, 255, -1)
+    if r_min > 0: cv2.circle(mask, (cx, cy), r_min, 0, -1)
+    return mask
+
+def get_hud_masks(h, w, cx, cy):
+    z_dritto = np.zeros((h, w), dtype=np.uint8)
+    cv2.circle(z_dritto, (cx, cy), R1, 255, -1)
+    z_v100 = create_wedge(h, w, cx, cy, A_T_LEFT, A_T_RIGHT, R1, R_MAX)
+    
+    z_stop_bottom = create_wedge(h, w, cx, cy, A_B_RIGHT, A_B_LEFT, R1, R_MAX)
+    z_stop_mid_sx = create_wedge(h, w, cx, cy, 180, A_T_LEFT, R2, R3)
+    z_stop_mid_dx = create_wedge(h, w, cx, cy, A_T_RIGHT, 360, R2, R3)
+    z_stop_inf_sx = create_wedge(h, w, cx, cy, A_B_LEFT, 180, R1, R3)
+    z_stop_inf_dx = create_wedge(h, w, cx, cy, 0, A_B_RIGHT, R1, R3)
+    z_stop = cv2.bitwise_or(z_stop_bottom, cv2.bitwise_or(z_stop_mid_sx, 
+             cv2.bitwise_or(z_stop_mid_dx, cv2.bitwise_or(z_stop_inf_sx, z_stop_inf_dx))))
+    
+    z_indietro = cv2.bitwise_or(create_wedge(h, w, cx, cy, A_B_LEFT, 180, R3, R_MAX),
+                               create_wedge(h, w, cx, cy, 0, A_B_RIGHT, R3, R_MAX))
+    z_av_sx = create_wedge(h, w, cx, cy, 180, A_T_LEFT, R1, R2)
+    z_sx    = create_wedge(h, w, cx, cy, 180, A_T_LEFT, R3, R_MAX)
+    z_av_dx = create_wedge(h, w, cx, cy, A_T_RIGHT, 360, R1, R2)
+    z_dx    = create_wedge(h, w, cx, cy, A_T_RIGHT, 360, R3, R_MAX)
+    
+    return [z_dritto, z_v100, z_stop, z_indietro, z_av_sx, z_sx, z_av_dx, z_dx]
+
+def draw_hud_lines(frame, cx, cy, w):
+    c_blue = (255, 200, 0); c_red = (0, 0, 255); c_orange = (0, 165, 255); c_white = (255,255,255)
+    f = cv2.FONT_HERSHEY_SIMPLEX
+    cv2.circle(frame, (cx, cy), R1, c_blue, 2)
+    for ang in [A_T_LEFT, A_T_RIGHT, A_B_LEFT, A_B_RIGHT]:
+        rad = math.radians(ang)
+        x2, y2 = int(cx + 1000 * math.cos(rad)), int(cy + 1000 * math.sin(rad))
+        cv2.line(frame, (cx, cy), (x2, y2), c_blue, 2)
+    cv2.line(frame, (0, cy), (w, cy), c_blue, 2)
+    for r in [R2, R3]:
+        cv2.ellipse(frame, (cx, cy), (r, r), 0, 180, A_T_LEFT, c_red, 2)
+        cv2.ellipse(frame, (cx, cy), (r, r), 0, A_T_RIGHT, 360, c_red, 2)
+        cv2.ellipse(frame, (cx, cy), (r, r), 0, A_B_LEFT, 180, c_red, 2)
+        cv2.ellipse(frame, (cx, cy), (r, r), 0, 0, A_B_RIGHT, c_red, 2)
+
+    cv2.putText(frame, "DRITTO", (cx-35, cy+5), f, 0.6, c_white, 2)
+    cv2.putText(frame, "V 100", (cx-30, cy-R1-40), f, 0.6, c_white, 2)
+    cv2.putText(frame, "AV-SX", (cx-110, cy-20), f, 0.5, c_white, 2)
+    cv2.putText(frame, "AV-DX", (cx+50, cy-20), f, 0.5, c_white, 2)
+    cv2.putText(frame, "SX", (cx-220, cy-20), f, 0.7, c_white, 2)
+    cv2.putText(frame, "DX", (cx+180, cy-20), f, 0.7, c_white, 2)
+    cv2.putText(frame, "STOP", (cx-10, cy+R1+100), f, 0.6, c_red, 2)
+    cv2.putText(frame, "INDIETRO", (cx-240, cy+140), f, 0.6, c_orange, 2)
+    cv2.putText(frame, "INDIETRO", (cx+140, cy+140), f, 0.6, c_orange, 2)
+
+# --- INIZIALIZZAZIONE ---
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+server_socket.bind((HOST, PORT))
+server_socket.listen(1)
+server_socket.settimeout(0.05)
+
+cap = cv2.VideoCapture(0)
+aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_6X6_250)
+parameters = aruco.DetectorParameters()
+detector = aruco.ArucoDetector(aruco_dict, parameters)
+
+client_socket = None
+hud_masks = None
+
+# Variabili di stato per il Salto del Ponte
+in_salto_ponte = False
+tempo_inizio_salto = 0
+
+print("SERVER AVVIATO. In attesa del Rover...")
+
+try:
+    while True:
+        ret, frame = cap.read()
+        if not ret: break
+        
+        h, w = frame.shape[:2]
+        cx, cy = w // 2, h // 2
+        display_frame = frame.copy()
+
+        if hud_masks is None or hud_masks[0].shape != (h, w):
+            hud_masks = get_hud_masks(h, w, cx, cy)
+
+        if client_socket is None:
+            try:
+                client_socket, addr = server_socket.accept()
+                client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+                print(f"Connesso: {addr}")
+            except: pass
+
+        # Default
+        cmd = 'STOP'
+        v_mult = 0.0
+        distanza_cm = 0.0
+        stato_testo = "RICERCA MARKER..."
+        colore_marker = (0, 0, 255)
+
+        # ---------------------------------------------------------
+        # LOGICA SALTO PONTE (Sovrascrive tutto se attiva)
+        # ---------------------------------------------------------
+        ora_attuale = time.time()
+        if in_salto_ponte:
+            if ora_attuale - tempo_inizio_salto < DURATA_SALTO_PONTE:
+                cmd = 'W'              # Forza la marcia avanti
+                v_mult = VEL_MAX       # Alla massima velocità
+                stato_testo = "SALTO PONTE ATTIVO!"
+                colore_marker = (0, 255, 255) # Giallo
+            else:
+                in_salto_ponte = False # Fine dei 2 secondi, resetta
+                print("Salto Ponte Completato.")
+
+        # ---------------------------------------------------------
+        # RICERCA MARKER (Solo se non stiamo facendo il salto)
+        # ---------------------------------------------------------
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        corners, ids, _ = detector.detectMarkers(gray)
+        
+        if ids is not None and ROVER_ID in ids:
+            idx = np.where(ids == ROVER_ID)[0][0]
+            m_corners = corners[idx]
+            
+            # --- I TUOI VALORI REALI DI CALIBRAZIONE ---
+            camera_matrix = np.array([
+                [558.80333994,   0.        , 310.70361399],
+                [  0.        , 550.123456  , 240.123456  ],
+                [  0.        ,   0.        ,   1.        ]
+            ], dtype=np.float32)
+            
+            dist_coeffs = np.array([
+                [-0.12490098,  0.27240783, -0.00234196, -0.00097381, -0.79204814]
+            ], dtype=np.float32)
+
+            # Risoluzione PnP con i nuovi parametri
+            success, rvec, tvec = cv2.solvePnP(obj_points, m_corners[0], camera_matrix, dist_coeffs)
+            
+            if success:
+                distanza_cm = tvec[2][0]
+                
+                # Disegna sempre il marker se lo vede
+                cv2.polylines(display_frame, [m_corners.astype(np.int32)], True, (255,0,0) if in_salto_ponte else colore_marker, 3)
+                cv2.putText(display_frame, f"DISTANZA: {int(distanza_cm)}cm", (w-220, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+                
+                # Applica logiche di guida SOLO se NON stiamo saltando il ponte
+                if not in_salto_ponte:
+                    
+                    # 1. CONTROLLO INNESCO SALTO PONTE
+                    if distanza_cm >= DISTANZA_TRIGGER_PONTE:
+                        in_salto_ponte = True
+                        tempo_inizio_salto = ora_attuale
+                        print("INIZIO SALTO PONTE!")
+                        
+                    # 2. GUIDA NORMALE
+                    elif DIST_MIN_GUIDA <= distanza_cm <= DIST_MAX_GUIDA:
+                        mask_aruco = np.zeros((h, w), dtype=np.uint8)
+                        cv2.fillPoly(mask_aruco, [m_corners.astype(np.int32)], 255)
+                        
+                        intersezioni = [cv2.countNonZero(cv2.bitwise_and(mask_aruco, m)) for m in hud_masks]
+                        if sum(intersezioni) > 200:
+                            z_idx = np.argmax(intersezioni)
+                            cmd = ZONE_CMDS[z_idx]
+                            stato_testo = ZONE_NAMES[z_idx]
+                            colore_marker = ZONE_COLORS[z_idx]
+
+                            # Applico le velocità configurate all'inizio
+                            if z_idx == 1: # Zona V100
+                                v_mult = VEL_MAX
+                            elif cmd == 'S': 
+                                v_mult = VEL_RETRO
+                            elif cmd == 'STOP': 
+                                v_mult = 0.0
+                            else: # Le altre zone di movimento
+                                if distanza_cm < DIST_LENTA: v_mult = VEL_LENTA
+                                elif DIST_LENTA <= distanza_cm <= DIST_MEDIA: v_mult = VEL_MEDIA
+                                else: v_mult = VEL_MAX
+                    else:
+                        stato_testo = "FUORI RANGE"
+
+        # Disegno l'HUD e lo stato
+        draw_hud_lines(display_frame, cx, cy, w)
+        cv2.putText(display_frame, f"AZIONE: {stato_testo}", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.8, colore_marker, 2)
+
+        # Invio dati al Rover
+        if client_socket:
+            try:
+                # Se stiamo saltando, non invio la distanza reale ma fittizia per non triggerare cose strane su Arduino
+                dist_inviata = 250 if in_salto_ponte else int(distanza_cm)
+                msg = f"{cmd},{v_mult},{dist_inviata}\n"
+                client_socket.sendall(msg.encode())
+            except:
+                client_socket = None
+
+        cv2.imshow('Radar Pilot DJI Neo', display_frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'): break
+
+finally:
+    cap.release()
+    cv2.destroyAllWindows()
+    server_socket.close()
+    if client_socket: client_socket.close()
+
+Client arduino
+
+#include "WiFiS3.h"
+
+// =================================================================
+// --- CONFIGURAZIONE RETE (DA CONTROLLARE IL GIORNO DELLA GARA) ---
+// =================================================================
+char ssid[] = "GiorgiLab";      // Nome della rete WiFi
+char pass[] = "123456789";      // Password del WiFi
+char server_ip[] = "192.168.2.119"; // <-- ATTENZIONE: Controlla l'IP del PC!
+int port = 9999;
+
+// =================================================================
+// --- CONFIGURAZIONE HARDWARE E PIN ---
+// =================================================================
+
+// --- PIN MOTORI (Keyestudio 4WD) ---
+const int MR_Ctrl = 2; const int MR_PWM = 6; // Motori Destri
+const int ML_Ctrl = 4; const int ML_PWM = 5; // Motori Sinistri
+
+// --- PIN SENSORE OSTACOLI (Keyestudio Shield) ---
+const int TRIG_PIN = 12; // Emette il suono
+const int ECHO_PIN = 13; // Ascolta il rimbalzo
+const int DISTANZA_EMERGENZA = 15; // Centimetri per far scattare la frenata
+
+// Variabili globali
+WiFiClient client;
+String inputString = "";
+String ultimaAzione = "STOP"; 
+
+void setup() {
+  Serial.begin(9600);
+  
+  // Inizializzazione Pin Motori
+  pinMode(MR_Ctrl, OUTPUT); pinMode(MR_PWM, OUTPUT);
+  pinMode(ML_Ctrl, OUTPUT); pinMode(ML_PWM, OUTPUT);
+  
+  // Inizializzazione Pin Radar
+  pinMode(TRIG_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
+  
+  // Connessione al WiFi
+  Serial.println("Avvio Rover... Connessione al WiFi: " + String(ssid));
+  WiFi.begin(ssid, pass);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nWiFi Connesso! IP Rover: " + WiFi.localIP().toString());
+}
+
+void loop() {
+  // ---------------------------------------------------------
+  // 1. CONTROLLO OSTACOLI FRONTALI (Riflesso Incondizionato)
+  // ---------------------------------------------------------
+  int distanzaOstacolo = getDistance();
+  
+  // Se c'è un muro a meno di 15cm (e non è un falso 0) e non stiamo già facendo retromarcia
+  if (distanzaOstacolo > 0 && distanzaOstacolo < DISTANZA_EMERGENZA && ultimaAzione != "S") {
+    eseguiManovraEvasiva();
+  }
+
+  // ---------------------------------------------------------
+  // 2. GESTIONE CONNESSIONE AL SERVER
+  // ---------------------------------------------------------
+  if (!client.connected()) {
+    stopCar();
+    if (client.connect(server_ip, port)) {
+      Serial.println("Connesso al Server Python!");
+    } else {
+      delay(1000); // Riprova tra 1 secondo se il server non è pronto
+      return;
+    }
+  }
+
+  // ---------------------------------------------------------
+  // 3. RICEZIONE COMANDI E SISTEMA ANTI-LAG
+  // ---------------------------------------------------------
+  bool commandReady = false;
+  String latestCommand = "";
+
+  // Svuotiamo il buffer tenendo solo l'ultimissimo comando arrivato
+  while (client.available()) {
+    char inChar = (char)client.read();
+    if (inChar == '\n') {
+      latestCommand = inputString;
+      inputString = "";
+      commandReady = true;
+    } else {
+      inputString += inChar;
+    }
+  }
+
+  // Se abbiamo un comando nuovo e pulito, lo eseguiamo
+  if (commandReady) {
+    executeCommand(latestCommand);
+  }
+}
+
+// =================================================================
+// --- FUNZIONI DI SUPPORTO ---
+// =================================================================
+
+// --- LETTURA RADAR ---
+int getDistance() {
+  digitalWrite(TRIG_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+  
+  long duration = pulseIn(ECHO_PIN, HIGH, 30000);
+  if (duration == 0) return 999; // Se non legge nulla, diciamo che è lontanissimo
+  return duration * 0.034 / 2;
+}
+
+// --- MANOVRA DI EMERGENZA ---
+void eseguiManovraEvasiva() {
+  Serial.println("OSTACOLO RILEVATO! Freno di emergenza!");
+  stopCar();
+  delay(200); 
+  
+  // Decide come indietreggiare in base a cosa stava facendo prima
+  if (ultimaAzione == "W" || ultimaAzione == "WD" || ultimaAzione == "WA") {
+    moveBack(200); 
+    delay(1200); // Retromarcia dritta
+  } 
+  else if (ultimaAzione == "A") {
+    moveBackRight(200);
+    delay(1000); // Retromarcia curvando la coda a destra
+  }
+  else if (ultimaAzione == "D") {
+    moveBackLeft(200);
+    delay(1000); // Retromarcia curvando la coda a sinistra
+  }
+
+  stopCar();
+  ultimaAzione = "STOP";
+  
+  // Dopo l'emergenza, butta via i comandi vecchi accumulati durante la manovra
+  while(client.available()) client.read(); 
+}
+
+// --- DECODIFICA DEL MESSAGGIO PYTHON ---
+void executeCommand(String data) {
+  data.trim();
+  int firstComma = data.indexOf(',');
+  int secondComma = data.indexOf(',', firstComma + 1);
+  
+  if (firstComma != -1 && secondComma != -1) {
+    String cmd = data.substring(0, firstComma);
+    float v_mult = data.substring(firstComma + 1, secondComma).toFloat();
+    
+    // Calcola la velocità reale da 0 a 255
+    int speed = (int)(v_mult * 255);
+
+    ultimaAzione = cmd; // Memorizza l'azione corrente per le emergenze
+
+    if (cmd == "W") moveForward(speed);
+    else if (cmd == "S") moveBack(speed);
+    else if (cmd == "A") turnLeft(speed);
+    else if (cmd == "D") turnRight(speed);
+    else if (cmd == "WA") moveForwardLeft(speed);
+    else if (cmd == "WD") moveForwardRight(speed);
+    else stopCar();
+  }
+}
+
+// =================================================================
+// --- LOGICA DI MOVIMENTO MOTORI ---
+// =================================================================
+
+void moveForward(int s) {
+  digitalWrite(ML_Ctrl, LOW);  analogWrite(ML_PWM, s);
+  digitalWrite(MR_Ctrl, HIGH); analogWrite(MR_PWM, s);
+}
+
+void moveBack(int s) {
+  digitalWrite(ML_Ctrl, HIGH); analogWrite(ML_PWM, s);
+  digitalWrite(MR_Ctrl, LOW);  analogWrite(MR_PWM, s);
+}
+
+void turnLeft(int s) {
+  digitalWrite(ML_Ctrl, HIGH); analogWrite(ML_PWM, s);
+  digitalWrite(MR_Ctrl, HIGH); analogWrite(MR_PWM, s);
+}
+
+void turnRight(int s) {
+  digitalWrite(ML_Ctrl, LOW);  analogWrite(ML_PWM, s);
+  digitalWrite(MR_Ctrl, LOW);  analogWrite(MR_PWM, s);
+}
+
+void moveForwardLeft(int s) { 
+  digitalWrite(ML_Ctrl, LOW);  analogWrite(ML_PWM, s / 3);
+  digitalWrite(MR_Ctrl, HIGH); analogWrite(MR_PWM, s);
+}
+
+void moveForwardRight(int s) { 
+  digitalWrite(ML_Ctrl, LOW);  analogWrite(ML_PWM, s);
+  digitalWrite(MR_Ctrl, HIGH); analogWrite(MR_PWM, s / 3);
+}
+
+void moveBackLeft(int s) { 
+  digitalWrite(ML_Ctrl, HIGH); analogWrite(ML_PWM, s / 3);
+  digitalWrite(MR_Ctrl, LOW);  analogWrite(MR_PWM, s);     
+}
+
+void moveBackRight(int s) { 
+  digitalWrite(ML_Ctrl, HIGH); analogWrite(ML_PWM, s);     
+  digitalWrite(MR_Ctrl, LOW);  analogWrite(MR_PWM, s / 3); 
+}
+
+void stopCar() {
+  analogWrite(ML_PWM, 0); 
+  analogWrite(MR_PWM, 0);
+}
+

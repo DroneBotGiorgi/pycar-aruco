@@ -1,0 +1,35 @@
+#ifndef CLIENT_ARDUINO_SETTINGS_H
+#define CLIENT_ARDUINO_SETTINGS_H
+
+#define PROJECT_VERSION "1.0"
+
+// Wi-Fi and TCP server settings.
+#define ARDUINO_WIFI_SSID "GiorgiLab"
+#define ARDUINO_WIFI_PASSWORD "123456789"
+#define ARDUINO_SERVER_IP "192.168.2.119"
+#define ARDUINO_SERVER_PORT 9999
+
+// Runtime behavior.
+#define ARDUINO_SERIAL_BAUD 9600
+#define ARDUINO_WIFI_RETRY_DELAY_MS 500
+#define ARDUINO_SERVER_RETRY_DELAY_MS 1000
+#define ARDUINO_COMMAND_BUFFER_SIZE 128
+
+// Motor pins (Keyestudio 4WD).
+#define ARDUINO_MR_CTRL_PIN 2
+#define ARDUINO_MR_PWM_PIN 6
+#define ARDUINO_ML_CTRL_PIN 4
+#define ARDUINO_ML_PWM_PIN 5
+
+// Obstacle sensor pins (ultrasonic).
+#define ARDUINO_TRIG_PIN 12
+#define ARDUINO_ECHO_PIN 13
+#define ARDUINO_EMERGENCY_DISTANCE_CM 15
+
+// Emergency maneuver tuning.
+#define ARDUINO_EMERGENCY_STOP_DELAY_MS 200
+#define ARDUINO_BACK_STRAIGHT_MS 1200
+#define ARDUINO_BACK_TURN_MS 1000
+#define ARDUINO_EMERGENCY_PWM 200
+
+#endif
