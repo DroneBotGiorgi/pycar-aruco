@@ -1,0 +1,54 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" width="1460" height="420" viewBox="0 0 1460 420" role="img" aria-labelledby="title desc">
+  <title id="title">Team 2 software flow</title>
+  <desc id="desc">Flusso software Team 2 con server PC, protocollo TCP e client Python PiCar.</desc>
+  <rect width="1460" height="420" fill="#f8fafc"/>
+
+  <text x="36" y="54" font-family="Segoe UI, Arial, sans-serif" font-size="34" font-weight="700" fill="#0f172a">TEAM 2 - FLUSSO SOFTWARE</text>
+
+  <rect x="20" y="132" rx="14" ry="14" width="180" height="120" fill="#dbeafe" stroke="#1d4ed8" stroke-width="2"/>
+  <text x="110" y="175" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="700" fill="#0f172a">DJI Fly</text>
+  <text x="110" y="202" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#334155">stream app</text>
+
+  <rect x="220" y="132" rx="14" ry="14" width="180" height="120" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+  <text x="310" y="175" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="700" fill="#0f172a">ADB + scrcpy</text>
+  <text x="310" y="202" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#334155">video bridge</text>
+
+  <rect x="420" y="132" rx="14" ry="14" width="190" height="120" fill="#dcfce7" stroke="#15803d" stroke-width="2"/>
+  <text x="515" y="172" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="700" fill="#0f172a">capture layer</text>
+  <text x="515" y="198" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#334155">detector/capture.py</text>
+
+  <rect x="630" y="132" rx="14" ry="14" width="220" height="120" fill="#dcfce7" stroke="#15803d" stroke-width="2"/>
+  <text x="740" y="168" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="700" fill="#0f172a">server decisione</text>
+  <text x="740" y="194" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#334155">server/server.py</text>
+  <text x="740" y="216" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#334155">ArUco + solvePnP + HUD</text>
+
+  <rect x="870" y="132" rx="14" ry="14" width="170" height="120" fill="#fef3c7" stroke="#b45309" stroke-width="2"/>
+  <text x="955" y="172" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="700" fill="#0f172a">TCP protocol</text>
+  <text x="955" y="198" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#334155">cmd,v_mult,distanza</text>
+
+  <rect x="1060" y="132" rx="14" ry="14" width="200" height="120" fill="#dcfce7" stroke="#15803d" stroke-width="2"/>
+  <text x="1160" y="168" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="700" fill="#0f172a">client rover</text>
+  <text x="1160" y="194" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#334155">team2/client_picar.py</text>
+  <text x="1160" y="216" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#334155">last message only</text>
+
+  <rect x="1280" y="132" rx="14" ry="14" width="160" height="120" fill="#ffedd5" stroke="#c2410c" stroke-width="2"/>
+  <text x="1360" y="172" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="700" fill="#0f172a">attuazione</text>
+  <text x="1360" y="198" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#334155">picarx + robot_hat</text>
+
+  <line x1="200" y1="192" x2="220" y2="192" stroke="#334155" stroke-width="4"/>
+  <polygon points="220,192 208,184 208,200" fill="#334155"/>
+  <line x1="400" y1="192" x2="420" y2="192" stroke="#334155" stroke-width="4"/>
+  <polygon points="420,192 408,184 408,200" fill="#334155"/>
+  <line x1="610" y1="192" x2="630" y2="192" stroke="#334155" stroke-width="4"/>
+  <polygon points="630,192 618,184 618,200" fill="#334155"/>
+  <line x1="850" y1="192" x2="870" y2="192" stroke="#334155" stroke-width="4"/>
+  <polygon points="870,192 858,184 858,200" fill="#334155"/>
+  <line x1="1040" y1="192" x2="1060" y2="192" stroke="#334155" stroke-width="4"/>
+  <polygon points="1060,192 1048,184 1048,200" fill="#334155"/>
+  <line x1="1260" y1="192" x2="1280" y2="192" stroke="#334155" stroke-width="4"/>
+  <polygon points="1280,192 1268,184 1268,200" fill="#334155"/>
+
+  <text x="310" y="286" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#475569">frame stream</text>
+  <text x="740" y="286" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#475569">marker pose + distanza</text>
+  <text x="1160" y="286" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#475569">comando aggiornato</text>
+</svg>

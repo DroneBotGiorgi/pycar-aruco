@@ -2,124 +2,100 @@
 
 ![version](https://img.shields.io/badge/version-1.0-blue)
 
-Questo repository gestisce un flusso operativo in due fasi con lo stesso drone dotato di camera: prima rileva il fuoco, poi usa l'inquadratura del marker ArUco per guidare uno dei tre rover verso il punto rilevato. Il server supporta due backend: TCP per client esterni e API RoboMaster via SDK.
+Progetto sviluppato per la RomeCup 2026 dall'IIS Giorgi di Milano.
 
-Per installazione, requisiti runtime, caveat RoboMaster e note di deployment, vedi [INSTALL.md](INSTALL.md).
+Il sistema implementa un flusso in due fasi con lo stesso drone: rilevamento del target (fuoco) e guida visiva di un rover verso la posizione rilevata. La base software condivisa e unica; cambia soltanto il backend rover.
 
-## Componenti
+Schema generale del flusso di progetto:
 
-- `server/server.py`: acquisisce il video, rileva il marker ArUco e invia comandi radar con protocollo `cmd,v_mult,distanza`.
-- `server/settings.py`: file principale con i parametri runtime (rete, calibrazione camera, HUD, ponte, velocita, client).
-- `team1/robomaster_api.py`: adapter API per RoboMaster con supporto comandi estesi e sicurezza ToF opzionale.
-- `team2/client_picar.py`: client TCP Picar-X con parsing `cmd,v_mult,distanza`, anti ostacolo e riconnessione automatica.
-- `team3/client_arduino.c`: firmware client TCP per rover Arduino con anti-lag, anti ostacolo e comandi estesi.
-- `team3/settings.h`: configurazione centralizzata del client Arduino (Wi-Fi, server, pin, sensore, timing evasione).
-- `team3/arduino_c_compat.h`: utility C minimale per confronto stringhe lato firmware Arduino.
+![Schema progetto](documentation/assets/schema.png)
 
-- `detector/`: modulo nativo del repository per rilevamento fuoco via pipeline YOLO su stream ADB, webcam o RTMP.
+## Scopo e perimetro
 
-- `team1/simulator_client.py`: client TCP con simulazione visiva 2D per test senza rover reale.
-- `team1/simulator_api.py`: adapter simulato per validare la logica RoboMaster senza hardware.
-- `tools/generate_markers.py`: genera marker ArUco stampabili in `tools/printables`.
+L'obiettivo e validare una pipeline end-to-end in arena ridotta (drone + rover) senza infrastruttura esterna di localizzazione. In particolare:
 
-- `install.md`: guida completa a installazione, caveat runtime e deployment per i vari target.
+- percezione del target tramite modello YOLOv8;
+- stima della posa del rover tramite marker ArUco nel frame del drone;
+- generazione comandi di guida con logica discreta a zone;
+- esecuzione su tre piattaforme rover eterogenee.
 
-## Come funziona
+## Architettura operativa
 
-Fase 1: il drone esegue il modulo `detector` per individuare il fuoco nel flusso video.
+### Fase 1: detection del target
 
-Fase 2: lo stesso drone, usando la camera che inquadra il marker ArUco, esegue `server/server.py` e guida il rover scelto verso il fuoco tramite backend PiCar, Arduino o RoboMaster.
+Il modulo `detector` processa il feed video del drone (ADB/scrcpy, con fallback webcam o RTMP) e produce lo stato di rilevamento. L'entrypoint principale e `detector.main`.
 
-Il server usa una logica radar a zone con HUD, stima distanza reale via `solvePnP` e calibrazione camera reale. La guida decide il comando in base alla zona ArUco e alla distanza, con velocita dinamica e modalita "salto ponte" temporizzata per ostacoli sospesi.
+Dettagli di addestramento YOLOv8:
 
-Protocollo TCP inviato ai client:
+- pipeline esterna dedicata: https://github.com/DroneBotGiorgi/yolo-fire-detector
+- generazione dataset sintetico con compositing di sorgenti fuoco su sfondi variabili (sia geometrici, che scaricati da Unsplash programmaticamente);
+- hard negative mining su footage reale per ridurre falsi positivi in scenario arena;
+- preset YAML distinti per strategie diverse (es. alta recall vs anti-falsi-positivi);
+- training su Colab/GPU con esportazione del checkpoint `.pt` usato dal modulo `detector`.
 
-- `cmd,v_mult,distanza`
-- comandi possibili: `W`, `W_MAX`, `S`, `A`, `D`, `WA`, `WD`, `STOP`
-- `v_mult` e un moltiplicatore tra 0.0 e 1.0
-- `distanza` e la distanza stimata in cm
+Nel repository corrente il runtime usa `detector/settings.yaml` (soglie, modello, frequenza inferenza), mentre il ciclo train/val/test e nel repository dedicato sopra.
 
-## Profili Launch VS Code
+### Fase 2: guida del rover
 
-Nel file `.vscode/launch.json` sono disponibili profili unificati per rilevamento, guida e simulazione.
+Il server `server/server.py` usa la stessa catena video del drone per rilevare il marker ArUco montato sul rover. La distanza viene stimata con `solvePnP` (profondita), mentre il comando di guida e determinato da un HUD a 8 zone bitmap configurato in `server/settings.py`.
 
-### Rilevamento fuoco
+In pratica la guida funziona cosi: il sistema guarda dove cade il marker nel frame del drone, capisce in che direzione deve andare il rover e con quale intensita, poi invia il comando al backend rover del team.
 
-- `Drone | Fire Detect`: avvia `detector.main` con webcam e pannello GUI.
+Schema HUD (illustrazione):
 
-### Simulazione
+![HUD 8 zone](documentation/assets/hud_8_zone.svg)
 
-- `Simulation | TCP Rover`: avvio combinato server TCP + rover simulato (`team1/simulator_client.py`).
-- `Simulation | RoboMaster`: avvio server con backend RoboMaster simulato (senza hardware).
+I comandi sono intenzionalmente semplici:
 
-### Hardware reale
+- `cmd`: che manovra fare (avanti, curva, stop...)
+- `v_mult`: quanto forte farla (scala tra `0` e `1`)
 
-- `Drone | Guide PiCar`: avvia `server/server.py` per guidare il rover PiCar via TCP.
-- `Drone | Guide Arduino`: avvia `server/server.py` per guidare il rover Arduino via TCP.
-- `Drone | Guide RoboMaster`: avvia `server/server.py` con backend RoboMaster SDK.
+Ogni team implementa questa stessa decisione con il proprio backend rover (SDK diretto, client Python TCP, firmware Arduino). I dettagli di trasporto e attuazione sono nei documenti team-specifici.
 
-Ogni profilo usa input runtime modificabili al momento del lancio:
+## Scelte implementative comuni
 
-- rete: host/port, camera, marker-id, mode
+- Pipeline unificata drone -> visione -> controllo, riusata su tutte le varianti rover.
+- Protocollo di comando coerente per disaccoppiare decisione (server) ed esecuzione (client rover).
+- Parametrizzazione centralizzata in `server/settings.py` e `detector/settings.yaml`.
+- Calibrazione camera esplicita (`tools/calibration.py`) con salvataggio parametri in YAML.
 
-Per tutti i parametri di tuning e sicurezza (server/client/simulatore), fai riferimento a [server/settings.py](server/settings.py).
+## Varianti rover (tre team)
 
-## Uso pratico
+La differenza tra i team e nel livello di attuazione, non nella logica di percezione/decisione.
 
-- avvia prima `Drone | Fire Detect` per trovare il fuoco
-- poi avvia il profilo `Drone | Guide ...` del rover che vuoi mandare sul target
-- se usi PiCar o Arduino, avvia poi il client sul rover; se sei in test usa uno dei profili `Simulation | ...`
-- usa i parametri in `server/settings.py` per tuning rapido di calibrazione, ponte, velocita e sicurezza
-- scegli il backend con `--transport tcp|robomaster|robomaster-sim`
-- premi `Q` sulla finestra del server per fermare il sistema
+- Team 1 - RoboMaster EP Core: controllo diretto via SDK DJI (`team1/robomaster_api.py`) con backend simulato (`team1/simulator_api.py`).
+- Team 2 - PiCar-X: client Python TCP (`team2/client_picar.py`) con gestione attuazione locale.
+- Team 3 - Arduino 4WD: firmware C TCP (`team3/client_arduino.c`) con controllo differenziale DRV8833.
 
-Quando il server termina, prova a inviare `STOP` al rover prima di chiudere la connessione.
+I dettagli tecnici su invio, parsing e processamento dei comandi sono nei documenti team-specifici.
 
-## Struttura del repository
+## In conclusione: punti di forza
 
-```
-DroneBotGiorgi/
-├── server/
-│   ├── server.py          # Server principale: visione, ArUco, HUD, comandi
-│   └── settings.py        # Tutti i parametri runtime
-├── detector/
-│   ├── main.py            # Entry point CLI (--source, --conf, --gui)
-│   ├── pipeline.py        # Loop rilevamento frame → YOLOv8 → output
-│   ├── detector.py        # Wrapper YoloDetector
-│   ├── capture.py         # Sorgenti video: ADB, webcam, RTMP
-│   ├── gui.py             # Pannello Tkinter opzionale
-│   ├── settings.yaml      # Configurazione default
-│   └── models/best_test.pt  # Pesi YOLOv8
-├── team1/
-│   ├── robomaster_api.py  # Adapter SDK DJI (chassis.drive_speed)
-│   ├── simulator_api.py   # Adapter RoboMaster simulato
-│   └── simulator_client.py # Client TCP simulato 2D
-├── team2/
-│   └── client_picar.py    # Client TCP rover PiCar-X
-├── team3/
-│   ├── client_arduino.c   # Firmware Arduino (TCP, motori, ultrasuoni)
-│   ├── settings.h         # Costanti compilate (Wi-Fi, pin, soglie)
-│   └── arduino_c_compat.h # Utility C per parsing comandi
-├── tools/
-│   ├── calibration.py         # Calibrazione telecamera drone (chessboard → camera_matrix)
-│   ├── calibration_output.yaml  # Output calibrazione (generato da calibration.py)
-│   └── generate_markers.py   # Generatore marker ArUco
-├── documentation/
-│   ├── team1/
-│   │   ├── team1_flusso.md
-│   │   ├── team1_flowchart.md
-│   │   └── team1_bom_sbom.md
-│   ├── team2/
-│   │   ├── team2_flusso.md
-│   │   ├── team2_flowchart.md
-│   │   └── team2_bom_sbom.md
-│   └── team3/
-│       ├── team3_flusso.md
-│       ├── team3_flowchart.md
-│       └── team3_bom_sbom.md
-├── README.md              # README tecnico con protocollo e profili launch
-├── INTRO.md               # Questo file: introduzione e guida rapida
-└── INSTALL.md             # Installazione e deployment completo
-```
+- Un solo drone, due ruoli reali nella stessa missione: prima detection del target, poi guida rover visuale.
+- Pipeline end-to-end senza infrastruttura esterna di localizzazione: tutto si regge su video, marker e stima posa.
+- Architettura modulare ma coerente: stessa logica di decisione, tre backend rover diversi, confronto tecnico diretto tra team.
+- Addestramento YOLOv8 dedicato allo scenario gara con dataset sintetico e hard negative mining su footage reale.
+- Guida discreta a zone con HUD bitmap: comportamento interpretabile, tarabile in campo e robusto al rumore visivo.
+- Protocollo comando essenziale e portabile (`cmd` + `v_mult`), facile da integrare su SDK, client Python e firmware embedded.
+- Forte valore ingegneristico-didattico: visione artificiale, networking, controllo rover e integrazione hardware/software in un unico progetto.
 
----
+## Limiti e ipotesi operative
+
+- Qualita della guida dipendente dalla visibilita del marker nel frame del drone.
+- Accuratezza metrica legata alla calibrazione effettiva della camera.
+- Robustezza complessiva sensibile a latenza video e jitter della catena ADB/scrcpy.
+- La logica di controllo e discreta (zone), quindi non ottimizza traiettorie continue come un controllore PID/MPC.
+
+## Documenti del repository
+
+Documenti di valutazione:
+
+- `documentation/BOM.MD`: bill of materials hardware unificata
+- `documentation/SBOM.MD`: software bill of materials unificata
+- `documentation/TEAM1.MD`, `documentation/TEAM2.MD`, `documentation/TEAM3.MD`: dettagli implementativi per ciascun team
+- `documentation/TEAM1_FLOW.svg`, `documentation/TEAM2_FLOW.svg`, `documentation/TEAM3_FLOW.svg`: diagrammi di flusso semplificati
+
+Documenti operativi:
+
+- `QUICKSTART.MD`: avvio rapido (assume installazione gia completata)
+- `INSTALL.MD`: installazione, ambienti e prerequisiti

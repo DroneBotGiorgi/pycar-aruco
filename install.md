@@ -1,9 +1,9 @@
-# Install and Deployment Guide
+# DroneBotGiorgi - INSTALLAZIONE E DEPLOYMENT
 
 ![version](https://img.shields.io/badge/version-1.0-blue)
 
 Questa guida raccoglie tutte le istruzioni di installazione e i caveat runtime.
-Il file [README.md](README.md) descrive il flusso completo: il drone rileva il fuoco e poi guida il rover selezionato verso il target usando il marker ArUco.
+Il file [README.MD](README.MD) descrive il flusso completo: il drone rileva il fuoco e poi guida il rover selezionato verso il target usando il marker ArUco.
 
 ## 1. Prerequisiti
 

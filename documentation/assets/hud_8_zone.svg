@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 640 480" role="img" aria-labelledby="title desc">
+  <title id="title">HUD 8 zone - code-faithful</title>
+  <desc id="desc">Rappresentazione pulita dell'HUD con geometria aderente ai parametri del server: r1=80, r2=150, r3=200, center_angle=35.</desc>
+
+  <rect width="640" height="480" fill="#0f172a"/>
+
+  <!-- Geometria identica a draw_hud_lines in server/server.py -->
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- c_blue = BGR(255,200,0) => RGB(0,200,255) -->
+    <circle cx="320" cy="240" r="80" stroke="#00c8ff" stroke-width="2"/>
+    <line x1="320" y1="240" x2="-253" y2="-579" stroke="#00c8ff" stroke-width="2"/>
+    <line x1="320" y1="240" x2="893" y2="-579" stroke="#00c8ff" stroke-width="2"/>
+    <line x1="320" y1="240" x2="-253" y2="1059" stroke="#00c8ff" stroke-width="2"/>
+    <line x1="320" y1="240" x2="893" y2="1059" stroke="#00c8ff" stroke-width="2"/>
+    <line x1="0" y1="240" x2="640" y2="240" stroke="#00c8ff" stroke-width="2"/>
+
+    <!-- c_red = BGR(0,0,255) => RGB(255,0,0) -->
+    <!-- r2 = 150 -->
+    <path d="M 170 240 A 150 150 0 0 1 233.96 117.13" stroke="#ff0000" stroke-width="2"/>
+    <path d="M 406.04 117.13 A 150 150 0 0 1 470 240" stroke="#ff0000" stroke-width="2"/>
+    <path d="M 233.96 362.87 A 150 150 0 0 1 170 240" stroke="#ff0000" stroke-width="2"/>
+    <path d="M 470 240 A 150 150 0 0 1 406.04 362.87" stroke="#ff0000" stroke-width="2"/>
+
+    <!-- r3 = 200 -->
+    <path d="M 120 240 A 200 200 0 0 1 205.28 76.17" stroke="#ff0000" stroke-width="2"/>
+    <path d="M 434.72 76.17 A 200 200 0 0 1 520 240" stroke="#ff0000" stroke-width="2"/>
+    <path d="M 205.28 403.83 A 200 200 0 0 1 120 240" stroke="#ff0000" stroke-width="2"/>
+    <path d="M 520 240 A 200 200 0 0 1 434.72 403.83" stroke="#ff0000" stroke-width="2"/>
+  </g>
+
+  <!-- Label allineate alle coordinate usate dal server -->
+  <g font-family="Segoe UI, Arial, sans-serif" font-weight="700">
+    <text x="285" y="245" fill="#ffffff" font-size="19">DRITTO</text>
+    <text x="290" y="120" fill="#ffffff" font-size="19">V 100</text>
+    <text x="210" y="220" fill="#ffffff" font-size="16">AV-SX</text>
+    <text x="370" y="220" fill="#ffffff" font-size="16">AV-DX</text>
+    <text x="100" y="220" fill="#ffffff" font-size="22">SX</text>
+    <text x="500" y="220" fill="#ffffff" font-size="22">DX</text>
+    <text x="310" y="420" fill="#ff0000" font-size="19">STOP</text>
+    <!-- c_orange = BGR(0,165,255) => RGB(255,165,0) -->
+    <text x="80" y="460" fill="#ffa500" font-size="19">INDIETRO</text>
+    <text x="460" y="460" fill="#ffa500" font-size="19">INDIETRO</text>
+  </g>
+</svg>
